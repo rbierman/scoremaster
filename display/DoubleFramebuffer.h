@@ -20,6 +20,7 @@ public:
 
     // --- DRAWING INTERFACE ---
     void drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) const;
+    void drawNumber(int num, int x, int y, uint8_t r, uint8_t g, uint8_t b) const;
     void clearBack() const;
 
     // --- SYSTEM INTERFACE ---

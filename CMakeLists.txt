@@ -7,6 +7,7 @@ add_executable(hockey-scoreboard main.cpp
         display/DoubleFramebuffer.cpp
         display/IDisplay.h
         display/SFMLDisplay.cpp
+        display/SFMLDisplay.h
         display/ColorLightDisplay.cpp
         display/ColorLightDisplay.h)
 
