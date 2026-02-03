@@ -24,6 +24,6 @@ private:
     const uint8_t srcMac[6] = {0x22, 0x22, 0x33, 0x44, 0x55, 0x66};
 
     void setupSocket();
-    void sendraw(uint8_t* data, int len);
+    void sendraw(const uint8_t* data, int len);
     void sendSync();
 };

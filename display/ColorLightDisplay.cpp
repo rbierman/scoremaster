@@ -54,7 +54,7 @@ void ColorLightDisplay::output() {
             memcpy(packet + 6, srcMac, 6);
             packet[12] = 0x55; // Data Packet Type
 
-            int numPixels = std::min(CL_MAX_PIXL_PER_PACKET, width - pixelsSent);
+            const int numPixels = std::min(CL_MAX_PIXL_PER_PACKET, width - pixelsSent);
 
             // ColorLight Header (Bytes 14-19)
             int dataIndex = CL_PACKET_DATA_OFFSET;
@@ -87,8 +87,7 @@ void ColorLightDisplay::output() {
 }
 
 void ColorLightDisplay::sendSync() {
-    uint8_t packet[CL_SYNC_PACKET_SIZE];
-    memset(packet, 0, CL_SYNC_PACKET_SIZE);
+    uint8_t packet[CL_SYNC_PACKET_SIZE] = {};
     memcpy(packet, destMac, 6);
     memcpy(packet + 6, srcMac, 6);
 
@@ -103,7 +102,7 @@ void ColorLightDisplay::sendSync() {
     sendraw(packet, CL_SYNC_PACKET_SIZE);
 }
 
-void ColorLightDisplay::sendBrightness(uint8_t brightness) {
+void ColorLightDisplay::sendBrightness(const uint8_t brightness) {
     uint8_t packet[CL_BRIG_PACKET_SIZE] = {};
     memcpy(packet, destMac, 6);
     memcpy(packet + 6, srcMac, 6);
@@ -126,7 +125,7 @@ void ColorLightDisplay::setupSocket() {
         exit(1);
     }
 
-    struct ifreq ifr;
+    ifreq ifr{};
     memset(&ifr, 0, sizeof(ifr));
     strncpy(ifr.ifr_name, m_interface.c_str(), IFNAMSIZ-1);
     if (ioctl(m_sockfd, SIOCGIFINDEX, &ifr) < 0) {
@@ -139,15 +138,15 @@ void ColorLightDisplay::setupSocket() {
     m_socket_address.sll_ifindex = ifr.ifr_ifindex;
     m_socket_address.sll_halen = ETH_ALEN;
 
-    if ((bind(m_sockfd, (struct sockaddr*)&m_socket_address, sizeof(m_socket_address))) == -1) {
+    if (bind(m_sockfd, reinterpret_cast<sockaddr *>(&m_socket_address), sizeof(m_socket_address)) == -1) {
         perror("Bind failed");
         exit(1);
     }
 }
 
-void ColorLightDisplay::sendraw(uint8_t* data, int len) {
+void ColorLightDisplay::sendraw(const uint8_t* data, const int len) {
     // Manually ensure the ethertype bytes are what the card expects
     // packet[12] = 0x55 (for data) or 0x01 (for sync)
     // packet[13] = sequence
-    sendto(m_sockfd, data, len, 0, (struct sockaddr*)&m_socket_address, sizeof(m_socket_address));
+    sendto(m_sockfd, data, len, 0, reinterpret_cast<sockaddr *>(&m_socket_address), sizeof(m_socket_address));
 }

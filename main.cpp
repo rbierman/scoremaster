@@ -9,6 +9,7 @@
 #include "display/ColorLightDisplay.h"
 #include "ScoreboardController.h"
 #include "CommandLineArgs.h" // Include the new header
+#include "ResourceLocator.h" // Include ResourceLocator
 
 int main(int argc, char* argv[]) {
 
@@ -40,18 +41,33 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    ScoreboardController scoreboard(dfb);
+    ResourceLocator resourceLocator; // Create ResourceLocator instance
+    ScoreboardController scoreboard(dfb, resourceLocator); // Pass ResourceLocator to constructor
+    scoreboard.setHomeTeamName("MAMBAS"); // Set initial home team name
+    scoreboard.setAwayTeamName("BREAKERS"); // Set initial away team name
 
     std::cout << "Starting scoreboard loop..." << std::endl;
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<> distrib(0, 9);
+    std::uniform_int_distribution<> distribScore(0, 9); // For scores
+    std::uniform_int_distribution<> distribShots(0, 50); // For shots
+    std::uniform_int_distribution<> distribPenalty(0, 5); // For penalty minutes (0-5 min)
+    std::uniform_int_distribution<> distribPeriod(1, 3); // For period (1-3)
 
-    int currentHomeScore = 0;
-    int currentAwayScore = 0;
-    int currentMinutes = 12;
+
+    int currentHomeScore = 22;
+    int currentAwayScore = 21;
+    int currentMinutes = 1;
     int currentSeconds = 0;
+    int currentHomeShots = 0;
+    int currentAwayShots = 0;
+    int homePenaltySeconds[2] = {80, 90};
+    int homePenaltyPlayer[2] = {88, 97};
+    int awayPenaltySeconds[2] = {60, 40};
+    int awayPenaltyPlayer[2] = {13, 22};
+    int currentPeriod = 1;
+
 
     // Main application loop
     bool running = true;
@@ -68,8 +84,22 @@ int main(int argc, char* argv[]) {
             currentMinutes--;
             if (currentMinutes < 0) {
                 currentMinutes = 20;
-                currentHomeScore = distrib(gen);
-                currentAwayScore = distrib(gen);
+                currentHomeScore = distribScore(gen);
+                currentAwayScore = distribScore(gen);
+                currentHomeShots = distribShots(gen);
+                currentAwayShots = distribShots(gen);
+                
+                homePenaltySeconds[0] = distribPenalty(gen) * 60;
+                homePenaltyPlayer[0] = std::uniform_int_distribution<>(1, 99)(gen);
+                homePenaltySeconds[1] = 0;
+                homePenaltyPlayer[1] = 0;
+
+                awayPenaltySeconds[0] = distribPenalty(gen) * 60;
+                awayPenaltyPlayer[0] = std::uniform_int_distribution<>(1, 99)(gen);
+                awayPenaltySeconds[1] = 0;
+                awayPenaltyPlayer[1] = 0;
+
+                currentPeriod = distribPeriod(gen);
             }
         } else {
             currentSeconds--;
@@ -78,6 +108,13 @@ int main(int argc, char* argv[]) {
         scoreboard.setHomeScore(currentHomeScore);
         scoreboard.setAwayScore(currentAwayScore);
         scoreboard.setTime(currentMinutes, currentSeconds);
+        scoreboard.setHomeShots(currentHomeShots);
+        scoreboard.setAwayShots(currentAwayShots);
+        for (int i = 0; i < 2; ++i) {
+            scoreboard.setHomePenalty(i, homePenaltySeconds[i], homePenaltyPlayer[i]);
+            scoreboard.setAwayPenalty(i, awayPenaltySeconds[i], awayPenaltyPlayer[i]);
+        }
+        scoreboard.setCurrentPeriod(currentPeriod);
 
         scoreboard.render();
 
