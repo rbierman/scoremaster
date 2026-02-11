@@ -1,15 +1,13 @@
 #pragma once
 
-#include <blend2d.h>
-#include <string> // Added missing include
-#include "display/DoubleFramebuffer.h"
-#include "ResourceLocator.h" // Include ResourceLocator
+#include <string>
+#include "ScoreboardState.h"
 
 class ScoreboardController {
 public:
-    explicit ScoreboardController(DoubleFramebuffer& dfb, const ResourceLocator& resourceLocator);
+    ScoreboardController();
 
-    void render();
+    const ScoreboardState& getState() const;
 
     // Scoreboard state management methods
     void setHomeScore(int score);
@@ -24,42 +22,5 @@ public:
     void setAwayTeamName(const std::string& name);
 
 private:
-    DoubleFramebuffer& dfb;
-
-    // Scoreboard state
-    int homeScore = 0;
-    int awayScore = 0;
-    int timeMinutes = 12;
-    int timeSeconds = 34;
-    int homeShots = 0;
-    int awayShots = 0;
-
-    struct Penalty {
-        int secondsRemaining = 0;
-        int playerNumber = 0;
-    };
-
-    Penalty homePenalties[2];
-    Penalty awayPenalties[2];
-
-    int currentPeriod = 1;
-    std::string homeTeamName = "HOME"; // New
-    std::string awayTeamName = "AWAY"; // New
-
-    BLRgba32 colorWhite{255, 255, 255};
-    BLRgba32 colorOrange{255, 170, 51};
-    BLRgba32 colorRed{255, 0, 0};
-
-    BLFontFace fontFace;
-    BLFont font;
-    BLFont shotsFont; // New font for shots on goal
-    BLFont periodFont; // New font for the current period
-    BLFont penaltyFont; // New font for penalties
-    BLFont labelFont; // New smaller font for labels
-    BLFont teamNameFont; // New smaller font for team names
-
-private: // Added this line to move it to private scope
-    const ResourceLocator& _resourceLocator;
-
-    void loadFont(const char* path);
+    ScoreboardState state;
 };

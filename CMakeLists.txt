@@ -12,6 +12,9 @@ add_executable(hockey-scoreboard main.cpp
         display/ColorLightDisplay.h
         ScoreboardController.h
         ScoreboardController.cpp
+        ScoreboardState.h
+        ScoreboardRenderer.h
+        ScoreboardRenderer.cpp
         CommandLineArgs.h
         CommandLineArgs.cpp
         ResourceLocator.h

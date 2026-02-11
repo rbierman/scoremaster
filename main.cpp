@@ -8,14 +8,15 @@
 #include "display/SFMLDisplay.h"
 #include "display/ColorLightDisplay.h"
 #include "ScoreboardController.h"
-#include "CommandLineArgs.h" // Include the new header
-#include "ResourceLocator.h" // Include ResourceLocator
+#include "ScoreboardRenderer.h"
+#include "CommandLineArgs.h"
+#include "ResourceLocator.h"
 
 int main(int argc, char* argv[]) {
 
-    CommandLineArgs args(argc, argv); // Create an instance of the new class
+    CommandLineArgs args(argc, argv);
 
-    if (args.showHelp()) { // Check if help was requested
+    if (args.showHelp()) {
         args.printHelp(argv[0]);
         return 0;
     }
@@ -23,16 +24,16 @@ int main(int argc, char* argv[]) {
     int w = 384, h = 160;
 
     DoubleFramebuffer dfb(w, h);
-    std::vector<IDisplay*> displays; // Use pointers for polymorphic behavior and dynamic allocation
+    std::vector<IDisplay*> displays;
 
     SFMLDisplay* sfmlDisplay = nullptr;
-    if (args.enableSFML()) { // Use getter
+    if (args.enableSFML()) {
         sfmlDisplay = new SFMLDisplay(dfb);
         displays.push_back(sfmlDisplay);
     }
 
-    if (args.enableColorLight()) { // Use getter
-        ColorLightDisplay* clDisplay = new ColorLightDisplay(args.colorLightInterface(), dfb); // Use getter
+    if (args.enableColorLight()) {
+        ColorLightDisplay* clDisplay = new ColorLightDisplay(args.colorLightInterface(), dfb);
         displays.push_back(clDisplay);
     }
 
@@ -41,19 +42,21 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    ResourceLocator resourceLocator; // Create ResourceLocator instance
-    ScoreboardController scoreboard(dfb, resourceLocator); // Pass ResourceLocator to constructor
-    scoreboard.setHomeTeamName("MAMBAS"); // Set initial home team name
-    scoreboard.setAwayTeamName("BREAKERS"); // Set initial away team name
+    ResourceLocator resourceLocator;
+    ScoreboardController scoreboard;
+    ScoreboardRenderer renderer(dfb, resourceLocator);
+
+    scoreboard.setHomeTeamName("MAMBAS");
+    scoreboard.setAwayTeamName("BREAKERS");
 
     std::cout << "Starting scoreboard loop..." << std::endl;
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<> distribScore(0, 9); // For scores
-    std::uniform_int_distribution<> distribShots(0, 50); // For shots
-    std::uniform_int_distribution<> distribPenalty(0, 5); // For penalty minutes (0-5 min)
-    std::uniform_int_distribution<> distribPeriod(1, 3); // For period (1-3)
+    std::uniform_int_distribution<> distribScore(0, 9);
+    std::uniform_int_distribution<> distribShots(0, 50);
+    std::uniform_int_distribution<> distribPenalty(0, 5);
+    std::uniform_int_distribution<> distribPeriod(1, 3);
 
 
     int currentHomeScore = 22;
@@ -72,11 +75,10 @@ int main(int argc, char* argv[]) {
     // Main application loop
     bool running = true;
     while(running) {
-        // If SFML display is enabled, its window state controls the loop
         if (sfmlDisplay && !sfmlDisplay->isOpen()) {
             running = false;
         }
-        if (!running) break; // Exit if SFML window closed
+        if (!running) break;
 
         // --- LOGIC ---
         if (currentSeconds == 0) {
@@ -116,7 +118,8 @@ int main(int argc, char* argv[]) {
         }
         scoreboard.setCurrentPeriod(currentPeriod);
 
-        scoreboard.render();
+        // --- RENDER ---
+        renderer.render(scoreboard.getState());
 
         // --- DISPLAY ---
         dfb.swap();
@@ -128,7 +131,6 @@ int main(int argc, char* argv[]) {
         usleep(1000000);
     }
 
-    // Clean up dynamically allocated display objects
     for (IDisplay* disp : displays) {
         delete disp;
     }
