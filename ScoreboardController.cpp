@@ -40,14 +40,9 @@ void ScoreboardController::render() {
 
     // --- Drawing starts here ---
 
-    // Clear the background to a dark blue
+    // Clear the background
     ctx.clearAll();
-    // ctx.fillAll(fillAllBLRgba32(0xFF000000));
 
-    // Draw border
-    ctx.setStrokeStyle(BLRgba32(0xFFFF0000)); // Bright blue (ABGR)
-    ctx.setStrokeWidth(3.0); // 3-pixel wide border
-    ctx.strokeRect(0, 0, w, h); // Rectangle covering the whole image
 
     // Set the fill style for the text
     ctx.setFillStyle(BLRgba32(0xFFFFFFFF)); // White
@@ -57,36 +52,14 @@ void ScoreboardController::render() {
 
     BLGlyphBuffer gb; // Initialize glyph buffer once
 
-    // --- Team Names ---
-    ctx.setFillStyle(BLRgba32(0xFFFFFFFF)); // White for team names
+    // --- Metrics and Positioning ---
+    BLFontMetrics teamNameFontMetrics = shotsFont.metrics();
+    double teamNameTextY = teamNameFontMetrics.capHeight + 4;
 
-    // Calculate teamNameTextY based on font metrics (ascent only)
-    BLFontMetrics teamNameFontMetrics = shotsFont.metrics(); // Assuming shotsFont for team names
-    double teamNameTextY = teamNameFontMetrics.capHeight + 4;  // Using ascent directly
-
-    // Home Team Name
-    ctx.fillUtf8Text(BLPoint(2, teamNameTextY), shotsFont, homeTeamName.c_str());
-
-    // Away Team Name (right-aligned)
-    gb.setUtf8Text(awayTeamName.c_str(), awayTeamName.length());
-    BLTextMetrics tmAwayName; // Use a distinct variable name
-    shotsFont.getTextMetrics(gb, tmAwayName);
-    gb.clear();
-
-    double awayTeamNameWidth = tmAwayName.advance.x; // Use advance.x for width
-    ctx.fillUtf8Text(BLPoint(w - awayTeamNameWidth - 2, teamNameTextY), shotsFont, awayTeamName.c_str());
-
-    // Draw the time (centered)
-    // Calculate clockTextY based on font metrics (ascent only)
     BLFontMetrics mainFontMetrics = font.metrics();
-    double clockTextY = mainFontMetrics.capHeight + 4; // Using ascent directly
+    double clockTextY = mainFontMetrics.capHeight + 4;
 
-    std::stringstream timeStream;
-    timeStream << std::setfill('0') << std::setw(2) << timeMinutes << ":"
-               << std::setfill('0') << std::setw(2) << timeSeconds;
-    std::string timeStr = timeStream.str();
-
-    // Split the time string to reduce spacing around the colon
+    // Time Metrics (needed for centering team names relative to time border)
     std::stringstream minStringStream;
     minStringStream << std::setfill('0') << std::setw(2) << timeMinutes;
     auto minutes = minStringStream.str();
@@ -108,9 +81,36 @@ void ScoreboardController::render() {
     font.getTextMetrics(gb, tmSec);
     gb.clear();
 
-    double spacingAdjustment = 10.0; // Reduce space by 10 pixels on each side of the colon
+    double spacingAdjustment = 10.0;
     double timeWidth = tmMin.advance.x + tmColon.advance.x + tmSec.advance.x - (2 * spacingAdjustment);
     double startX = (w / 2.0) - (timeWidth / 2.0);
+    int timePadding = 2;
+    int timeRectX = (int)startX - timePadding;
+
+    // --- Team Names ---
+    ctx.setFillStyle(BLRgba32(0xFFFFFFFF)); // White for team names
+
+    // Home Team Name (Centered in the left area)
+    gb.setUtf8Text(homeTeamName.c_str(), homeTeamName.length());
+    BLTextMetrics tmHomeName;
+    shotsFont.getTextMetrics(gb, tmHomeName);
+    gb.clear();
+    double homeTeamNameWidth = tmHomeName.advance.x;
+    double homeTeamNameX = (timeRectX / 2.0) - (homeTeamNameWidth / 2.0);
+    ctx.fillUtf8Text(BLPoint(homeTeamNameX, teamNameTextY), shotsFont, homeTeamName.c_str());
+
+    // Away Team Name (Centered in the right area)
+    gb.setUtf8Text(awayTeamName.c_str(), awayTeamName.length());
+    BLTextMetrics tmAwayName;
+    shotsFont.getTextMetrics(gb, tmAwayName);
+    gb.clear();
+
+    double awayTeamNameWidth = tmAwayName.advance.x;
+    int timeRectW = (int)timeWidth + (2 * timePadding);
+    double awayTeamNameX = (timeRectX + timeRectW + w) / 2.0 - (awayTeamNameWidth / 2.0);
+    ctx.fillUtf8Text(BLPoint(awayTeamNameX, teamNameTextY), shotsFont, awayTeamName.c_str());
+
+    // Draw the time (centered)
     double currentX = startX;
 
     ctx.setFillStyle(BLRgba32(0xFF0000FF)); // Bright red (ABGR)
@@ -129,38 +129,51 @@ void ScoreboardController::render() {
     // Draw 1px white border around the time
     ctx.setStrokeStyle(BLRgba32(0xFFFFFFFF));
     ctx.setStrokeWidth(2.0);
-    int timePadding = 2;
-    int timeRectX = startX - timePadding;
     int timeRectY = -1;
-    int timeRectW = timeWidth + (2 * timePadding);
-    int timeRectH = clockTextY + (3 * timePadding);
+    int timeRectH = (int)clockTextY + (3 * timePadding);
     ctx.strokeRect(timeRectX, timeRectY, timeRectW, timeRectH);
 
     gb.clear();
     // Calculate Y position for the line below team names
     // --- Scores ---
-    // Draw the home score
-    BLFontMetrics fontMetrics = font.metrics(); // Assuming shotsFont for team names
+    // Draw the home score (Centered in the left area)
+    BLFontMetrics fontMetrics = font.metrics();
     double mainTextY = 28 + fontMetrics.ascent - 6;
     std::string homeScoreStr = std::to_string(homeScore);
-    ctx.fillUtf8Text(BLPoint(2, mainTextY), font, homeScoreStr.c_str());
 
-    // Draw the away score
+    BLTextMetrics tmHomeScore{};
+    gb.setUtf8Text(homeScoreStr.c_str(), homeScoreStr.length());
+    font.getTextMetrics(gb, tmHomeScore);
+    gb.clear();
+    double homeScoreWidth = tmHomeScore.advance.x;
+    double homeScoreX = (timeRectX / 2.0) - (homeScoreWidth / 2.0);
+    ctx.fillUtf8Text(BLPoint(homeScoreX, mainTextY), font, homeScoreStr.c_str());
+
+    // Draw the away score (Centered in the right area)
     std::string awayScoreStr = std::to_string(awayScore);
     BLTextMetrics tmAwayScore{}; // For away score, using main font
     gb.setUtf8Text(awayScoreStr.c_str(), awayScoreStr.length());
     font.getTextMetrics(gb, tmAwayScore);
     gb.clear();
     double awayScoreWidth = tmAwayScore.advance.x; // Use advance.x for width
-    ctx.fillUtf8Text(BLPoint(w - awayScoreWidth - 4 , mainTextY), font, awayScoreStr.c_str());
+    double awayScoreX = (timeRectX + timeRectW + w) / 2.0 - (awayScoreWidth / 2.0);
+    ctx.fillUtf8Text(BLPoint(awayScoreX , mainTextY), font, awayScoreStr.c_str());
 
+    // Period label and number (centered under the time, at score height)
+    std::string periodStr = "PERIOD:" + std::to_string(currentPeriod);
+    BLTextMetrics tmPeriod{};
+    gb.setUtf8Text(periodStr.c_str(), periodStr.length());
+    shotsFont.getTextMetrics(gb, tmPeriod);
+    gb.clear();
+    double periodWidth = tmPeriod.advance.x;
+    double periodX = timeRectX + (timeRectW / 2.0) - (periodWidth / 2.0);
+    ctx.fillUtf8Text(BLPoint(periodX, mainTextY), shotsFont, periodStr.c_str());
 
     // Draw horizontal line below the score / time
-    double lineBelowScoreTimeY = 94;
+    double lineBelowScoreTimeY = 87;
     ctx.setStrokeStyle(BLRgba32(0xFFFF0000)); // Bright blue (ABGR)
     ctx.setStrokeWidth(1.0); // 1-pixel wide line
     ctx.strokeLine(0, lineBelowScoreTimeY, w, lineBelowScoreTimeY);
-
 
     // --- Shots on Goal ---
     double sogTextY = lineBelowScoreTimeY + 2 + teamNameFontMetrics.ascent;
@@ -170,15 +183,6 @@ void ScoreboardController::render() {
     std::string homeShotsStr = "SOG:" + std::to_string(homeShots);
     ctx.fillUtf8Text(BLPoint(2, sogTextY), shotsFont, homeShotsStr.c_str()); // 60 for number + padding
 
-
-    // Period label and number (centered)
-    std::string periodStr = "PER:" + std::to_string(currentPeriod);
-    BLTextMetrics tmPeriod{};
-    gb.setUtf8Text(periodStr.c_str(), periodStr.length());
-    shotsFont.getTextMetrics(gb, tmPeriod);
-    gb.clear();
-    double periodWidth = tmPeriod.advance.x; // Use advance.x for width
-    ctx.fillUtf8Text(BLPoint(w / 2 - periodWidth / 2, sogTextY), shotsFont, periodStr.c_str());
 
     // Away SOG number
     std::string awayShotsStr = "SOG:" + std::to_string(awayShots);
