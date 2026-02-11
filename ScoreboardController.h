@@ -49,6 +49,7 @@ private:
     BLFontFace fontFace;
     BLFont font;
     BLFont shotsFont; // New font for shots on goal
+    BLFont labelFont; // New smaller font for labels
 
 private: // Added this line to move it to private scope
     const ResourceLocator& _resourceLocator;
