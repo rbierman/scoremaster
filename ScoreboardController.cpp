@@ -85,19 +85,52 @@ void ScoreboardController::render() {
     timeStream << std::setfill('0') << std::setw(2) << timeMinutes << ":"
                << std::setfill('0') << std::setw(2) << timeSeconds;
     std::string timeStr = timeStream.str();
-    BLTextMetrics tmTime{};
-    gb.setUtf8Text(timeStr.c_str(), timeStr.length());
-    font.getTextMetrics(gb, tmTime);
 
-    double timeWidth = tmTime.advance.x; // Use advance.x for width
+    // Split the time string to reduce spacing around the colon
+    std::stringstream minStringStream;
+    minStringStream << std::setfill('0') << std::setw(2) << timeMinutes;
+    auto minutes = minStringStream.str();
+    std::string colonStr = ":";
+    std::stringstream secStringStream;
+    secStringStream << std::setfill('0') << std::setw(2) << timeSeconds;
+    auto seconds = secStringStream.str();
+
+    BLTextMetrics tmMin, tmColon, tmSec;
+    gb.setUtf8Text(minutes.c_str(), minutes.length());
+    font.getTextMetrics(gb, tmMin);
+    gb.clear();
+
+    gb.setUtf8Text(colonStr.c_str(), colonStr.length());
+    font.getTextMetrics(gb, tmColon);
+    gb.clear();
+
+    gb.setUtf8Text(seconds.c_str(), seconds.length());
+    font.getTextMetrics(gb, tmSec);
+    gb.clear();
+
+    double spacingAdjustment = 10.0; // Reduce space by 10 pixels on each side of the colon
+    double timeWidth = tmMin.advance.x + tmColon.advance.x + tmSec.advance.x - (2 * spacingAdjustment);
+    double startX = (w / 2.0) - (timeWidth / 2.0);
+    double currentX = startX;
+
     ctx.setFillStyle(BLRgba32(0xFF0000FF)); // Bright red (ABGR)
-    ctx.fillGlyphRun(BLPoint(w / 2 - timeWidth / 2, clockTextY), font, gb.glyphRun());
+
+    gb.setUtf8Text(minutes.c_str(), minutes.length());
+    ctx.fillUtf8Text(BLPoint(currentX, clockTextY), font, minutes.c_str());
+    currentX += tmMin.advance.x - spacingAdjustment;
+
+    gb.setUtf8Text(colonStr.c_str(), colonStr.length());
+    ctx.fillUtf8Text(BLPoint(currentX, clockTextY), font, colonStr.c_str());
+    currentX += tmColon.advance.x - spacingAdjustment;
+
+    gb.setUtf8Text(seconds.c_str(), seconds.length());
+    ctx.fillUtf8Text(BLPoint(currentX, clockTextY), font, seconds.c_str());
 
     // Draw 1px white border around the time
     ctx.setStrokeStyle(BLRgba32(0xFFFFFFFF));
     ctx.setStrokeWidth(2.0);
     int timePadding = 2;
-    int timeRectX = (w / 2 - timeWidth / 2) - timePadding;
+    int timeRectX = startX - timePadding;
     int timeRectY = -1;
     int timeRectW = timeWidth + (2 * timePadding);
     int timeRectH = clockTextY + (3 * timePadding);
