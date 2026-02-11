@@ -46,10 +46,17 @@ private:
     std::string homeTeamName = "HOME"; // New
     std::string awayTeamName = "AWAY"; // New
 
+    BLRgba32 colorWhite{255, 255, 255};
+    BLRgba32 colorOrange{255, 170, 51};
+    BLRgba32 colorRed{255, 0, 0};
+
     BLFontFace fontFace;
     BLFont font;
     BLFont shotsFont; // New font for shots on goal
+    BLFont periodFont; // New font for the current period
+    BLFont penaltyFont; // New font for penalties
     BLFont labelFont; // New smaller font for labels
+    BLFont teamNameFont; // New smaller font for team names
 
 private: // Added this line to move it to private scope
     const ResourceLocator& _resourceLocator;
