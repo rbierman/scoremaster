@@ -8,6 +8,12 @@ struct Penalty {
     int playerNumber = 0;
 };
 
+enum class ClockMode {
+    Running,
+    Stopped,
+    Clock
+};
+
 struct ScoreboardState {
     int homeScore = 0;
     int awayScore = 0;
@@ -20,4 +26,5 @@ struct ScoreboardState {
     int currentPeriod = 1;
     std::string homeTeamName = "HOME";
     std::string awayTeamName = "AWAY";
+    ClockMode clockMode = ClockMode::Stopped;
 };
