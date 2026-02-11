@@ -1,9 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <SFML/System/Clock.hpp>
 #include <SFML/System/Sleep.hpp>
-#include <SFML/Window/Event.hpp>
 #include <chrono>
 
 #include "display/DoubleFramebuffer.h"
@@ -11,66 +9,9 @@
 #include "display/ColorLightDisplay.h"
 #include "ScoreboardController.h"
 #include "ScoreboardRenderer.h"
+#include "KeyboardSimulator.h"
 #include "CommandLineArgs.h"
 #include "ResourceLocator.h"
-
-const std::vector<std::string> TEAM_NAMES = {
-    "MAMBAS", "BREAKERS", "EAGLES", "TIGERS", "SHARKS", "WOLVES", "LIONS", "STARS"
-};
-
-void handleInput(sf::RenderWindow& window, ScoreboardController& scoreboard, size_t& homeNameIdx, size_t& awayNameIdx) {
-    while (const std::optional event = window.pollEvent()) {
-        if (event->getIf<sf::Event::Closed>()) {
-            window.close();
-        } else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
-            switch (keyPressed->code) {
-                case sf::Keyboard::Key::Space:
-                    scoreboard.toggleClock();
-                    break;
-                case sf::Keyboard::Key::C:
-                    scoreboard.setClockMode(ClockMode::Clock);
-                    break;
-                case sf::Keyboard::Key::S:
-                    scoreboard.setClockMode(ClockMode::Stopped);
-                    break;
-                case sf::Keyboard::Key::R:
-                    scoreboard.setClockMode(ClockMode::Running);
-                    break;
-                case sf::Keyboard::Key::Num1:
-                    scoreboard.addHomeScore(1);
-                    break;
-                case sf::Keyboard::Key::Num2:
-                    scoreboard.addAwayScore(1);
-                    break;
-                case sf::Keyboard::Key::Num3:
-                    scoreboard.addHomeShots(1);
-                    break;
-                case sf::Keyboard::Key::Num4:
-                    scoreboard.addAwayShots(1);
-                    break;
-                case sf::Keyboard::Key::H:
-                    scoreboard.addHomePenalty(120, 22);
-                    break;
-                case sf::Keyboard::Key::A:
-                    scoreboard.addAwayPenalty(120, 33);
-                    break;
-                case sf::Keyboard::Key::P:
-                    scoreboard.nextPeriod();
-                    break;
-                case sf::Keyboard::Key::T:
-                    homeNameIdx = (homeNameIdx + 1) % TEAM_NAMES.size();
-                    scoreboard.setHomeTeamName(TEAM_NAMES[homeNameIdx]);
-                    break;
-                case sf::Keyboard::Key::Y:
-                    awayNameIdx = (awayNameIdx + 1) % TEAM_NAMES.size();
-                    scoreboard.setAwayTeamName(TEAM_NAMES[awayNameIdx]);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-}
 
 int main(int argc, char* argv[]) {
 
@@ -105,33 +46,12 @@ int main(int argc, char* argv[]) {
     ResourceLocator resourceLocator;
     ScoreboardController scoreboard;
     ScoreboardRenderer renderer(dfb, resourceLocator);
+    KeyboardSimulator simulator(scoreboard);
 
-    size_t homeNameIdx = 0;
-    size_t awayNameIdx = 1;
-
-    scoreboard.setHomeTeamName(TEAM_NAMES[homeNameIdx]);
-    scoreboard.setAwayTeamName(TEAM_NAMES[awayNameIdx]);
     scoreboard.setClockMode(ClockMode::Stopped);
 
     std::cout << "Starting scoreboard loop..." << std::endl;
-    std::cout << "------------------------------------------" << std::endl;
-    std::cout << "SIMULATOR CONTROLS:" << std::endl;
-    std::cout << "  [Space] Toggle Start/Stop" << std::endl;
-    std::cout << "  [1]     Home Score+" << std::endl;
-    std::cout << "  [2]     Away Score+" << std::endl;
-    std::cout << "  [3]     Home Shots+" << std::endl;
-    std::cout << "  [4]     Away Shots+" << std::endl;
-    std::cout << "  [H]     Home Penalty (2:00)" << std::endl;
-    std::cout << "  [A]     Away Penalty (2:00)" << std::endl;
-    std::cout << "  [P]     Next Period" << std::endl;
-    std::cout << "  [T]     Toggle Home Team Name" << std::endl;
-    std::cout << "  [Y]     Toggle Away Team Name" << std::endl;
-    std::cout << "  [C]     Clock Mode (System Time)" << std::endl;
-    std::cout << "  [R]     Resume Running" << std::endl;
-    std::cout << "  [S]     Stop Clock" << std::endl;
-    std::cout << "------------------------------------------" << std::endl;
-
-    sf::Clock clock;
+    simulator.printInstructions();
 
     // Main application loop
     bool running = true;
@@ -140,15 +60,14 @@ int main(int argc, char* argv[]) {
             if (!sfmlDisplay->isOpen()) {
                 running = false;
             } else {
-                handleInput(sfmlDisplay->getWindow(), scoreboard, homeNameIdx, awayNameIdx);
+                simulator.handleInput(sfmlDisplay->getWindow());
             }
         }
         
         if (!running) break;
 
         // --- LOGIC ---
-        sf::Time elapsed = clock.restart();
-        scoreboard.update(elapsed.asSeconds());
+        scoreboard.update();
 
         // --- RENDER ---
         renderer.render(scoreboard.getState());

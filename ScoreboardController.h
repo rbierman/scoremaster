@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include <random>
+#include <chrono>
 #include "ScoreboardState.h"
 
 class ScoreboardController {
@@ -10,7 +10,8 @@ public:
 
     const ScoreboardState& getState() const;
 
-    void update(double deltaTime);
+    void update(); // Internal timing
+    void update(double deltaTime); // External timing (optional/legacy)
 
     // Scoreboard state management methods
     void setHomeScore(int score);
@@ -32,14 +33,11 @@ public:
     void addHomePenalty(int seconds, int playerNumber);
     void addAwayPenalty(int seconds, int playerNumber);
     void nextPeriod();
+    void resetGame();
 
 private:
     ScoreboardState state;
 
     double gameTimeRemaining = 0.0;
-    double homePenaltyRemaining[2] = {0.0, 0.0};
-    double awayPenaltyRemaining[2] = {0.0, 0.0};
-
-    std::mt19937 gen;
-    void resetGame();
+    std::chrono::steady_clock::time_point lastUpdateTime;
 };
