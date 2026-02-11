@@ -1,16 +1,16 @@
-# hockey-scoreboard
-P5-LED hockey scoreboard
+# Hockey Scoreboard Monorepo
 
-## Build Instructions
+This repository contains the Hockey Scoreboard system and its accompanying control application.
 
-To configure the project with the specific toolchain and settings used in development, run:
+## Structure
 
-```bash
-./configure.sh
-```
+- **`scoreboard-system/`**: The core C++ scoreboard controller and renderer using Blend2D and SFML.
+- **`scoreboard-app/`**: A Flutter-based mobile application to control the scoreboard (under development).
 
-Then build with:
+## Getting Started
 
-```bash
-/home/ron/.local/share/JetBrains/Toolbox/apps/clion/bin/ninja/linux/x64/ninja -C cmake-build-debug
-```
+### Scoreboard System
+Navigate to `scoreboard-system/` and follow the instructions in its README to build and run the C++ application.
+
+### Scoreboard App
+Navigate to `scoreboard-app/` and run `flutter run` to start the mobile control application.
