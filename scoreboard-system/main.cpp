@@ -10,6 +10,7 @@
 #include "ScoreboardController.h"
 #include "ScoreboardRenderer.h"
 #include "KeyboardSimulator.h"
+#include "NetworkManager.h"
 #include "CommandLineArgs.h"
 #include "ResourceLocator.h"
 
@@ -47,6 +48,8 @@ int main(int argc, char* argv[]) {
     ScoreboardController scoreboard;
     ScoreboardRenderer renderer(dfb, resourceLocator);
     KeyboardSimulator simulator(scoreboard);
+    NetworkManager network(8080);
+    network.start();
 
     scoreboard.setClockMode(ClockMode::Stopped);
 
