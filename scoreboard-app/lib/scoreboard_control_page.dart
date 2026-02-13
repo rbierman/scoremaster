@@ -231,7 +231,7 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scoreboard Control'),
+        title: const Text('ScoreMaster'),
         actions: [
           IconButton(
             icon: const Icon(Icons.people),
@@ -251,7 +251,8 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => _wsService?.sendCommand('resetGame'),
+            tooltip: 'Reset Game',
+            onPressed: () => _showResetConfirmation(),
           ),
         ],
       ),
@@ -337,6 +338,33 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
           _buildPeriodControls(),
           const SizedBox(height: 24),
           _buildPenaltySection(),
+        ],
+      ),
+    );
+  }
+
+  void _showResetConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Game?'),
+        content: const Text('This will reset scores, shots, and the clock to their initial values. Are you sure?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _wsService?.sendCommand('resetGame');
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Reset'),
+          ),
         ],
       ),
     );

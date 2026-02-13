@@ -11,7 +11,7 @@ class ScoreboardControlApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Hockey Scoreboard Control',
+      title: 'ScoreMaster',
       theme: ThemeData(
         brightness: Brightness.dark,
         primarySwatch: Colors.blue,
