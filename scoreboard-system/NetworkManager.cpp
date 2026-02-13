@@ -83,14 +83,12 @@ static int query_callback(int sock, const struct sockaddr* from, size_t addrlen,
     mdns_string_t name_str = mdns_string_extract(data, size, &name_offset, name_buffer, sizeof(name_buffer));
     
     std::string queried_name(name_str.str, name_str.length);
-    std::cout << "[Network] Received query for: " << queried_name << " (Type: " << rtype << ")" << std::endl;
 
     // Respond if the query matches our service type, instance name, or hostname
     if (compare_names(queried_name, records->service_type) || 
         compare_names(queried_name, records->instance_name) ||
         compare_names(queried_name, records->hostname)) {
         
-        std::cout << "[Network] Sending response for: " << queried_name << std::endl;
         mdns_record_t ptr_record = {};
         ptr_record.name = {records->service_type.c_str(), records->service_type.length()};
         ptr_record.type = MDNS_RECORDTYPE_PTR;
@@ -138,7 +136,7 @@ void NetworkManager::runmDNS() {
 
     int sock = mdns_socket_open_ipv4(&addr);
     if (sock < 0) {
-        std::cerr << "[Network] Error: Could not open mDNS socket. Is another mDNS responder (like avahi-daemon) running?" << std::endl;
+        std::cerr << "Error: Could not open mDNS socket. Is another mDNS responder (like avahi-daemon) running?" << std::endl;
         return;
     }
 
@@ -159,7 +157,7 @@ void NetworkManager::runmDNS() {
         records.hostname = host_str;
     }
 
-    std::cout << "[Network] mDNS Responder active" << std::endl;
+    std::cout << "mDNS Responder active" << std::endl;
     std::cout << "  Instance: " << records.instance_name << std::endl;
     std::cout << "  Hostname: " << records.hostname << std::endl;
     std::cout << "  IP:       " << records.local_ip << std::endl;
