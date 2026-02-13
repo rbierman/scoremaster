@@ -249,7 +249,26 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
 
     return Column(
       children: [
-        Text(teamName, style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
+        TextField(
+          maxLength: 8,
+          decoration: InputDecoration(
+            labelText: isHome ? 'Home Team' : 'Away Team',
+            border: const OutlineInputBorder(),
+            counterText: "",
+          ),
+          controller: TextEditingController.fromValue(
+            TextEditingValue(
+              text: teamName,
+              selection: TextSelection.collapsed(offset: teamName.length),
+            ),
+          ),
+          onChanged: (val) {
+            _wsService?.sendCommand(
+              isHome ? 'setHomeTeamName' : 'setAwayTeamName',
+              value: val,
+            );
+          },
+        ),
         const SizedBox(height: 16),
         Text('Score', style: Theme.of(context).textTheme.titleMedium),
         Row(
