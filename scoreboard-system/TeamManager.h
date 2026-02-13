@@ -8,8 +8,9 @@
 struct Player {
     std::string name;
     int number;
+    std::string imagePath;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(Player, name, number)
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(Player, name, number, imagePath)
 };
 
 struct Team {
@@ -29,6 +30,9 @@ public:
     void addOrUpdatePlayer(const std::string& teamName, const Player& player);
     void removePlayer(const std::string& teamName, int playerNumber);
     
+    bool savePlayerImage(const std::string& teamName, int playerNumber, const std::vector<uint8_t>& imageData, const std::string& extension);
+    std::vector<uint8_t> getPlayerImage(const std::string& teamName, int playerNumber) const;
+
     std::vector<std::string> getTeamNames() const;
     const Team* getTeam(const std::string& teamName) const;
     
@@ -39,5 +43,6 @@ private:
     std::map<std::string, Team> teams;
     
     std::string getTeamFilePath(const std::string& teamName) const;
+    std::string getImagesDirPath() const;
     void ensureDataDirectoryExists();
 };

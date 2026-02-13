@@ -18,10 +18,22 @@ void TeamManager::ensureDataDirectoryExists() {
             std::cerr << "Error creating data directory: " << e.what() << std::endl;
         }
     }
+    std::string imagesDir = getImagesDirPath();
+    if (!fs::exists(imagesDir)) {
+        try {
+            fs::create_directories(imagesDir);
+        } catch (const fs::filesystem_error& e) {
+            std::cerr << "Error creating images directory: " << e.what() << std::endl;
+        }
+    }
 }
 
 std::string TeamManager::getTeamFilePath(const std::string& teamName) const {
     return (fs::path(dataDir) / (teamName + ".json")).string();
+}
+
+std::string TeamManager::getImagesDirPath() const {
+    return (fs::path(dataDir) / "images").string();
 }
 
 void TeamManager::loadTeams() {
@@ -84,6 +96,61 @@ void TeamManager::removePlayer(const std::string& teamName, int playerNumber) {
             players.end());
         saveTeam(teamName);
     }
+}
+
+bool TeamManager::savePlayerImage(const std::string& teamName, int playerNumber, const std::vector<uint8_t>& imageData, const std::string& extension) {
+    std::string fileName = teamName + "_" + std::to_string(playerNumber) + extension;
+    fs::path imagePath = fs::path(getImagesDirPath()) / fileName;
+
+    try {
+        std::ofstream file(imagePath, std::ios::binary);
+        file.write(reinterpret_cast<const char*>(imageData.data()), imageData.size());
+        
+        // Update player imagePath in memory
+        auto& team = teams[teamName];
+        for (auto& p : team.players) {
+            if (p.number == playerNumber) {
+                p.imagePath = fileName; // Store just filename or flag
+                saveTeam(teamName);
+                return true;
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error saving player image: " << e.what() << std::endl;
+    }
+    return false;
+}
+
+std::vector<uint8_t> TeamManager::getPlayerImage(const std::string& teamName, int playerNumber) const {
+    auto it = teams.find(teamName);
+    if (it == teams.end()) return {};
+
+    std::string fileName = "";
+    for (const auto& p : it->second.players) {
+        if (p.number == playerNumber) {
+            fileName = p.imagePath;
+            break;
+        }
+    }
+
+    if (fileName.empty()) return {};
+
+    fs::path fullPath = fs::path(getImagesDirPath()) / fileName;
+    if (!fs::exists(fullPath)) return {};
+
+    try {
+        std::ifstream file(fullPath, std::ios::binary | std::ios::ate);
+        std::streamsize size = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        std::vector<uint8_t> buffer(size);
+        if (file.read(reinterpret_cast<char*>(buffer.data()), size)) {
+            return buffer;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error reading player image: " << e.what() << std::endl;
+    }
+    return {};
 }
 
 std::vector<std::string> TeamManager::getTeamNames() const {

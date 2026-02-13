@@ -1,5 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io' show Platform;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'web_socket_service.dart';
 import 'team_model.dart';
 
@@ -15,26 +19,76 @@ class TeamConfigurationPage extends StatefulWidget {
 class _TeamConfigurationPageState extends State<TeamConfigurationPage> {
   List<Team> _teams = [];
   bool _isLoading = true;
-  StreamSubscription? _subscription;
+  StreamSubscription? _teamsSubscription;
+  StreamSubscription? _imageSubscription;
+  final ImagePicker _picker = ImagePicker();
+  
+  // Cache for player images: "team_number" -> bytes
+  final Map<String, Uint8List> _imageCache = {};
 
   @override
   void initState() {
     super.initState();
-    _subscription = widget.wsService.teamsStream.listen((teams) {
+    _teamsSubscription = widget.wsService.teamsStream.listen((teams) {
       if (mounted) {
         setState(() {
           _teams = teams;
           _isLoading = false;
         });
+        // Request images for players that have them and aren't in cache
+        for (var team in teams) {
+          for (var player in team.players) {
+            String key = "${team.name}_${player.number}";
+            if (player.hasImage && !_imageCache.containsKey(key)) {
+              widget.wsService.getPlayerImage(team.name, player.number);
+            }
+          }
+        }
       }
     });
+
+    _imageSubscription = widget.wsService.imageStream.listen((imageData) {
+      if (mounted) {
+        String team = imageData['team'];
+        int number = imageData['number'];
+        String? base64 = imageData['data'];
+        if (base64 != null) {
+          setState(() {
+            _imageCache["${team}_$number"] = base64Decode(base64);
+          });
+        }
+      }
+    });
+
     widget.wsService.getTeams();
   }
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    _teamsSubscription?.cancel();
+    _imageSubscription?.cancel();
     super.dispose();
+  }
+
+  Future<void> _pickImage(Team team, Player player) async {
+    final source = Platform.isLinux ? ImageSource.gallery : ImageSource.camera;
+    
+    final XFile? photo = await _picker.pickImage(
+      source: source,
+      maxWidth: 400,
+      maxHeight: 400,
+      imageQuality: 85,
+    );
+
+    if (photo != null) {
+      final bytes = await photo.readAsBytes();
+      widget.wsService.uploadPlayerImage(team.name, player.number, bytes);
+      
+      // Optimistically update cache
+      setState(() {
+        _imageCache["${team.name}_${player.number}"] = bytes;
+      });
+    }
   }
 
   void _showAddTeamDialog() {
@@ -111,7 +165,12 @@ class _TeamConfigurationPageState extends State<TeamConfigurationPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => widget.wsService.getTeams(),
+            onPressed: () {
+              setState(() {
+                _imageCache.clear();
+              });
+              widget.wsService.getTeams();
+            },
           ),
         ],
       ),
@@ -137,12 +196,28 @@ class _TeamConfigurationPageState extends State<TeamConfigurationPage> {
                       itemBuilder: (context, pIndex) {
                         final player = team.players[pIndex];
                         if (player.number == 0 && player.name == "New Team") return const SizedBox.shrink();
+                        
+                        Uint8List? imageBytes = _imageCache["${team.name}_${player.number}"];
+
                         return ListTile(
-                          leading: CircleAvatar(child: Text('${player.number}')),
+                          leading: CircleAvatar(
+                            backgroundImage: imageBytes != null ? MemoryImage(imageBytes) : null,
+                            child: imageBytes == null ? Text('${player.number}') : null,
+                          ),
                           title: Text(player.name),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.remove_circle_outline),
-                            onPressed: () => widget.wsService.removePlayer(team.name, player.number),
+                          subtitle: Text('#${player.number}'),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.camera_alt),
+                                onPressed: () => _pickImage(team, player),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                                onPressed: () => widget.wsService.removePlayer(team.name, player.number),
+                              ),
+                            ],
                           ),
                           onTap: () => _showEditPlayerDialog(team, player),
                         );

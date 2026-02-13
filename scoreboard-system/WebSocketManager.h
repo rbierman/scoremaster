@@ -28,4 +28,5 @@ private:
     void handleMessage(std::shared_ptr<ix::ConnectionState> connectionState, ix::WebSocket & webSocket, const ix::WebSocketMessagePtr & msg);
     void handleCommand(const std::string& payload);
     nlohmann::json stateToJson(const ScoreboardState& state);
+    nlohmann::json teamsToJson();
 };

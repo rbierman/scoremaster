@@ -2,8 +2,76 @@
 #include "ScoreboardController.h"
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <fstream>
 
 using json = nlohmann::json;
+
+// Simple base64 decoder
+static std::vector<uint8_t> base64_decode(const std::string& in) {
+    static const std::string base64_chars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz"
+        "0123456789+/";
+
+    std::vector<uint8_t> out;
+    std::vector<int> T(256, -1);
+    for (int i = 0; i < 64; i++) T[base64_chars[i]] = i;
+
+    int val = 0, valb = -8;
+    for (uint8_t c : in) {
+        if (T[c] == -1) continue;
+        val = (val << 6) + T[c];
+        valb += 6;
+        if (valb >= 0) {
+            out.push_back(uint8_t((val >> valb) & 0xFF));
+            valb -= 8;
+        }
+    }
+    return out;
+}
+
+static std::string base64_encode(const std::vector<uint8_t>& in) {
+    static const std::string base64_chars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz"
+        "0123456789+/";
+
+    std::string out;
+    int val = 0, valb = -6;
+    for (uint8_t c : in) {
+        val = (val << 8) + c;
+        valb += 8;
+        while (valb >= 0) {
+            out.push_back(base64_chars[(val >> valb) & 0x3F]);
+            valb -= 6;
+        }
+    }
+    if (valb > -6) out.push_back(base64_chars[((val << 8) >> (valb + 8)) & 0x3F]);
+    while (out.size() % 4) out.push_back('=');
+    return out;
+}
+
+json WebSocketManager::teamsToJson() {
+    json teamsList = json::array();
+    for (const auto& name : teamManager.getTeamNames()) {
+        const Team* t = teamManager.getTeam(name);
+        if (t) {
+            json teamJson;
+            teamJson["name"] = t->name;
+            json playersList = json::array();
+            for (const auto& p : t->players) {
+                json pJson;
+                pJson["name"] = p.name;
+                pJson["number"] = p.number;
+                pJson["hasImage"] = !p.imagePath.empty();
+                playersList.push_back(pJson);
+            }
+            teamJson["players"] = playersList;
+            teamsList.push_back(teamJson);
+        }
+    }
+    return teamsList;
+}
 
 WebSocketManager::WebSocketManager(int port, ScoreboardController& controller, TeamManager& teamManager)
     : port(port), controller(controller), teamManager(teamManager), server(port, "0.0.0.0") {
@@ -57,12 +125,42 @@ void WebSocketManager::handleMessage(std::shared_ptr<ix::ConnectionState> connec
             if (cmd == "getTeams") {
                 json response;
                 response["type"] = "teams";
-                json teamsList = json::array();
-                for (const auto& name : teamManager.getTeamNames()) {
-                    const Team* t = teamManager.getTeam(name);
-                    if (t) teamsList.push_back(*t);
+                response["teams"] = teamsToJson();
+                webSocket.send(response.dump());
+                return;
+            } else if (cmd == "uploadPlayerImage") {
+                std::string teamName = j.at("team").get<std::string>();
+                int playerNumber = j.at("number").get<int>();
+                std::string base64Data = j.at("data").get<std::string>();
+                std::string ext = j.value("ext", ".jpg");
+
+                auto decoded = base64_decode(base64Data);
+                if (!decoded.empty()) {
+                    if (teamManager.savePlayerImage(teamName, playerNumber, decoded, ext)) {
+                        json response;
+                        response["type"] = "teams";
+                        response["teams"] = teamsToJson();
+                        std::string respPayload = response.dump();
+                        for (auto&& client : server.getClients()) {
+                            client->send(respPayload);
+                        }
+                    }
                 }
-                response["teams"] = teamsList;
+                return;
+            } else if (cmd == "getImage") {
+                std::string teamName = j.at("team").get<std::string>();
+                int playerNumber = j.at("number").get<int>();
+                auto imageData = teamManager.getPlayerImage(teamName, playerNumber);
+                
+                json response;
+                response["type"] = "image";
+                response["team"] = teamName;
+                response["number"] = playerNumber;
+                if (!imageData.empty()) {
+                    response["data"] = base64_encode(imageData);
+                } else {
+                    response["data"] = nullptr;
+                }
                 webSocket.send(response.dump());
                 return;
             }
@@ -80,12 +178,7 @@ void WebSocketManager::handleMessage(std::shared_ptr<ix::ConnectionState> connec
         // Also send teams on connect
         json teamsResponse;
         teamsResponse["type"] = "teams";
-        json teamsList = json::array();
-        for (const auto& name : teamManager.getTeamNames()) {
-            const Team* t = teamManager.getTeam(name);
-            if (t) teamsList.push_back(*t);
-        }
-        teamsResponse["teams"] = teamsList;
+        teamsResponse["teams"] = teamsToJson();
         webSocket.send(teamsResponse.dump());
     } else if (msg->type == ix::WebSocketMessageType::Close) {
         std::cout << "WebSocket connection closed" << std::endl;
@@ -133,15 +226,10 @@ void WebSocketManager::handleCommand(const std::string& payload) {
             p.number = j.at("number").get<int>();
             teamManager.addOrUpdatePlayer(j.at("team").get<std::string>(), p);
             
-            // Broadcast teams update?
+            // Broadcast teams update
             json response;
             response["type"] = "teams";
-            json teamsList = json::array();
-            for (const auto& name : teamManager.getTeamNames()) {
-                const Team* t = teamManager.getTeam(name);
-                if (t) teamsList.push_back(*t);
-            }
-            response["teams"] = teamsList;
+            response["teams"] = teamsToJson();
             std::string respPayload = response.dump();
             for (auto&& client : server.getClients()) {
                 client->send(respPayload);
@@ -153,12 +241,7 @@ void WebSocketManager::handleCommand(const std::string& payload) {
             // Broadcast teams update
             json response;
             response["type"] = "teams";
-            json teamsList = json::array();
-            for (const auto& name : teamManager.getTeamNames()) {
-                const Team* t = teamManager.getTeam(name);
-                if (t) teamsList.push_back(*t);
-            }
-            response["teams"] = teamsList;
+            response["teams"] = teamsToJson();
             std::string respPayload = response.dump();
             for (auto&& client : server.getClients()) {
                 client->send(respPayload);
@@ -169,12 +252,7 @@ void WebSocketManager::handleCommand(const std::string& payload) {
              // Broadcast teams update
             json response;
             response["type"] = "teams";
-            json teamsList = json::array();
-            for (const auto& name : teamManager.getTeamNames()) {
-                const Team* t = teamManager.getTeam(name);
-                if (t) teamsList.push_back(*t);
-            }
-            response["teams"] = teamsList;
+            response["teams"] = teamsToJson();
             std::string respPayload = response.dump();
             for (auto&& client : server.getClients()) {
                 client->send(respPayload);

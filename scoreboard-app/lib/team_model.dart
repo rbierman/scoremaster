@@ -1,19 +1,22 @@
 class Player {
   final String name;
   final int number;
+  final bool hasImage;
 
-  Player({required this.name, required this.number});
+  Player({required this.name, required this.number, this.hasImage = false});
 
   factory Player.fromJson(Map<String, dynamic> json) {
     return Player(
       name: json['name'] as String,
       number: json['number'] as int,
+      hasImage: json['hasImage'] as bool? ?? false,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'name': name,
     'number': number,
+    'hasImage': hasImage,
   };
 }
 

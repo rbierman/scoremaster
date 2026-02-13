@@ -10,10 +10,12 @@ class WebSocketService {
   WebSocketChannel? _channel;
   final _stateController = StreamController<ScoreboardState>.broadcast();
   final _teamsController = StreamController<List<Team>>.broadcast();
+  final _imageController = StreamController<Map<String, dynamic>>.broadcast();
   final _connectionController = StreamController<ConnectionStatus>.broadcast();
   
   Stream<ScoreboardState> get stateStream => _stateController.stream;
   Stream<List<Team>> get teamsStream => _teamsController.stream;
+  Stream<Map<String, dynamic>> get imageStream => _imageController.stream;
   Stream<ConnectionStatus> get connectionStream => _connectionController.stream;
   
   ConnectionStatus _status = ConnectionStatus.disconnected;
@@ -59,6 +61,8 @@ class WebSocketService {
             final List<dynamic> teamsJson = data['teams'];
             final teams = teamsJson.map((e) => Team.fromJson(e as Map<String, dynamic>)).toList();
             _teamsController.add(teams);
+          } else if (data.containsKey('type') && data['type'] == 'image') {
+            _imageController.add(data);
           } else if (data.containsKey('homeScore')) { // Likely ScoreboardState
             final state = ScoreboardState.fromJson(data);
             _stateController.add(state);
@@ -141,8 +145,23 @@ class WebSocketService {
   }
 
   void deleteTeam(String teamName) {
-    sendCommand('deleteTeam', value: teamName); // Server uses j.at("name") for deleteTeam, wait
-    // Let me check server code for deleteTeam
+    sendCommand('deleteTeam', extraArgs: {'name': teamName});
+  }
+
+  void uploadPlayerImage(String teamName, int playerNumber, List<int> bytes) {
+    sendCommand('uploadPlayerImage', extraArgs: {
+      'team': teamName,
+      'number': playerNumber,
+      'data': base64Encode(bytes),
+      'ext': '.jpg',
+    });
+  }
+
+  void getPlayerImage(String teamName, int playerNumber) {
+    sendCommand('getImage', extraArgs: {
+      'team': teamName,
+      'number': playerNumber,
+    });
   }
 
   void getTeams() {
@@ -155,6 +174,7 @@ class WebSocketService {
     _channel?.sink.close();
     _stateController.close();
     _teamsController.close();
+    _imageController.close();
     _connectionController.close();
   }
 }
