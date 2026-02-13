@@ -98,25 +98,41 @@ void TeamManager::removePlayer(const std::string& teamName, int playerNumber) {
     }
 }
 
+bool TeamManager::hasPlayer(const std::string& teamName, int playerNumber) const {
+    auto it = teams.find(teamName);
+    if (it == teams.end()) return false;
+    for (const auto& p : it->second.players) {
+        if (p.number == playerNumber) return true;
+    }
+    return false;
+}
+
 bool TeamManager::savePlayerImage(const std::string& teamName, int playerNumber, const std::vector<uint8_t>& imageData, const std::string& extension) {
     std::string fileName = teamName + "_" + std::to_string(playerNumber) + extension;
     fs::path imagePath = fs::path(getImagesDirPath()) / fileName;
 
+    std::cout << "[TeamManager] Saving image to: " << imagePath << " (Size: " << imageData.size() << " bytes)" << std::endl;
+
     try {
         std::ofstream file(imagePath, std::ios::binary);
+        if (!file) {
+            std::cerr << "[TeamManager] Failed to open file for writing: " << imagePath << std::endl;
+            return false;
+        }
         file.write(reinterpret_cast<const char*>(imageData.data()), imageData.size());
         
         // Update player imagePath in memory
         auto& team = teams[teamName];
         for (auto& p : team.players) {
             if (p.number == playerNumber) {
-                p.imagePath = fileName; // Store just filename or flag
+                p.imagePath = fileName;
                 saveTeam(teamName);
                 return true;
             }
         }
+        std::cerr << "[TeamManager] Player #" << playerNumber << " not found in team " << teamName << " after saving image." << std::endl;
     } catch (const std::exception& e) {
-        std::cerr << "Error saving player image: " << e.what() << std::endl;
+        std::cerr << "[TeamManager] Error saving player image: " << e.what() << std::endl;
     }
     return false;
 }

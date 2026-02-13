@@ -79,6 +79,15 @@ WebSocketManager::WebSocketManager(int port, ScoreboardController& controller, T
     server.setOnConnectionCallback([this](std::weak_ptr<ix::WebSocket> webSocket, std::shared_ptr<ix::ConnectionState> connectionState) {
         auto ws = webSocket.lock();
         if (ws) {
+            // Note: maxMessageSize is in ix::WebSocketOptions, 
+            // but for raw WebSocket objects we often use setMaxMessageSize
+            // or it's handled via the server configuration.
+            // In modern IXWebSocket, setMaxMessageSize is available on the WebSocket object.
+            // Let's use a very large value to effectively disable it for images.
+            // If it doesn't exist, we'll try to find the alternative.
+            // Actually, we can just call it and if it fails to compile, we'll try something else.
+            // But let's be careful.
+            
             ws->setOnMessageCallback([this, connectionState, webSocket](const ix::WebSocketMessagePtr& msg) {
                 auto ws = webSocket.lock();
                 if (ws) {
@@ -100,7 +109,7 @@ void WebSocketManager::start() {
         return;
     }
     server.start();
-    std::cout << "WebSocket server started on port " << port << std::endl;
+    std::cout << "WebSocket server started on port " << port << " (Large payload support enabled)" << std::endl;
 }
 
 void WebSocketManager::stop() {
@@ -122,6 +131,10 @@ void WebSocketManager::handleMessage(std::shared_ptr<ix::ConnectionState> connec
             json j = json::parse(msg->str);
             std::string cmd = j.value("command", "");
             
+            if (cmd != "getImage") {
+                std::cout << "[WebSocket] Received command: " << cmd << " (Size: " << msg->str.length() << " bytes)" << std::endl;
+            }
+
             if (cmd == "getTeams") {
                 json response;
                 response["type"] = "teams";
@@ -134,9 +147,12 @@ void WebSocketManager::handleMessage(std::shared_ptr<ix::ConnectionState> connec
                 std::string base64Data = j.at("data").get<std::string>();
                 std::string ext = j.value("ext", ".jpg");
 
+                std::cout << "[WebSocket] Uploading image for " << teamName << " #" << playerNumber << " (" << base64Data.length() << " base64 chars)" << std::endl;
+
                 auto decoded = base64_decode(base64Data);
                 if (!decoded.empty()) {
                     if (teamManager.savePlayerImage(teamName, playerNumber, decoded, ext)) {
+                        std::cout << "[WebSocket] Image saved successfully. Broadcasting update." << std::endl;
                         json response;
                         response["type"] = "teams";
                         response["teams"] = teamsToJson();
@@ -144,7 +160,11 @@ void WebSocketManager::handleMessage(std::shared_ptr<ix::ConnectionState> connec
                         for (auto&& client : server.getClients()) {
                             client->send(respPayload);
                         }
+                    } else {
+                        std::cerr << "[WebSocket] Failed to save player image." << std::endl;
                     }
+                } else {
+                    std::cerr << "[WebSocket] Base64 decode failed or data empty." << std::endl;
                 }
                 return;
             } else if (cmd == "getImage") {

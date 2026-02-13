@@ -29,6 +29,7 @@ public:
     
     void addOrUpdatePlayer(const std::string& teamName, const Player& player);
     void removePlayer(const std::string& teamName, int playerNumber);
+    bool hasPlayer(const std::string& teamName, int playerNumber) const;
     
     bool savePlayerImage(const std::string& teamName, int playerNumber, const std::vector<uint8_t>& imageData, const std::string& extension);
     std::vector<uint8_t> getPlayerImage(const std::string& teamName, int playerNumber) const;

@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
     ScoreboardRenderer scoreboardRenderer(dfb, resourceLocator, scoreboard.getState());
     GoalCelebrationRenderer goalRenderer(dfb, resourceLocator, scoreboard);
     KeyboardSimulator simulator(scoreboard);
-    NetworkManager network(8080);
+    NetworkManager network(9000);
     network.start();
 
     // Default state: Game mode, clock stopped

@@ -163,6 +163,7 @@ void NetworkManager::runmDNS() {
     std::cout << "  Instance: " << records.instance_name << std::endl;
     std::cout << "  Hostname: " << records.hostname << std::endl;
     std::cout << "  IP:       " << records.local_ip << std::endl;
+    std::cout << "  Port:     " << records.port << std::endl;
 
     void* buffer = malloc(2048);
     int check_counter = 0;

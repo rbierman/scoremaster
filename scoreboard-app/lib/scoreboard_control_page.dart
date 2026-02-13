@@ -208,7 +208,8 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
       });
 
       try {
-        await _wsService!.connect(host, 9000);
+        int port = service.port;
+        await _wsService!.connect(host, port);
         _wsService!.stateStream.listen((newState) {
           setState(() {
             _state = newState;
@@ -216,11 +217,11 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
         });
         _wsService!.getTeams();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Connecting to ${service.name} ($host:9000)')),
+          SnackBar(content: Text('Connecting to ${service.name} ($host:$port)')),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to initialize connection on $host:9000')),
+          SnackBar(content: Text('Failed to initialize connection on $host:${service.port}')),
         );
       }
     }
