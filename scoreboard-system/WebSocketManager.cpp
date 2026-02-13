@@ -95,6 +95,7 @@ void WebSocketManager::handleCommand(const std::string& payload) {
             if (mode == "Running") controller.setClockMode(ClockMode::Running);
             else if (mode == "Stopped") controller.setClockMode(ClockMode::Stopped);
             else if (mode == "Clock") controller.setClockMode(ClockMode::Clock);
+            else if (mode == "Intermission") controller.setClockMode(ClockMode::Intermission);
         }
     } catch (const std::exception& e) {
         std::cerr << "Error parsing command JSON: " << e.what() << std::endl;
@@ -118,6 +119,7 @@ json WebSocketManager::stateToJson(const ScoreboardState& state) {
         case ClockMode::Running: mode = "Running"; break;
         case ClockMode::Stopped: mode = "Stopped"; break;
         case ClockMode::Clock: mode = "Clock"; break;
+        case ClockMode::Intermission: mode = "Intermission"; break;
     }
     j["clockMode"] = mode;
 

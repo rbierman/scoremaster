@@ -308,7 +308,7 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
   Widget _buildClockControls() {
     String modeStr = _state!.clockMode.toString().split('.').last;
     String timeStr = '${_state!.timeMinutes.toString().padLeft(2, '0')}:${_state!.timeSeconds.toString().padLeft(2, '0')}';
-    bool isClockRunning = _state!.clockMode == ClockMode.running;
+    bool isClockRunning = _state!.clockMode == ClockMode.running || _state!.clockMode == ClockMode.intermission;
 
     return Card(
       child: Padding(
@@ -342,6 +342,14 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
                   onPressed: () => _wsService?.sendCommand('setClockMode', value: 'Clock'),
                   icon: const Icon(Icons.access_time),
                   label: const Text('Time'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    _wsService?.sendCommand('setTime', minutes: 15, seconds: 0);
+                    _wsService?.sendCommand('setClockMode', value: 'Intermission');
+                  },
+                  icon: const Icon(Icons.timer_outlined),
+                  label: const Text('Intermission'),
                 ),
               ],
             ),

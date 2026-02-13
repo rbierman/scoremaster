@@ -11,7 +11,8 @@ struct Penalty {
 enum class ClockMode {
     Running,
     Stopped,
-    Clock
+    Clock,
+    Intermission
 };
 
 struct ScoreboardState {

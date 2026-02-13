@@ -27,18 +27,23 @@ void ScoreboardController::update() {
 }
 
 void ScoreboardController::update(double deltaTime) {
-    if (state.clockMode == ClockMode::Running) {
+    if (state.clockMode == ClockMode::Running || state.clockMode == ClockMode::Intermission) {
         int oldSeconds = static_cast<int>(std::ceil(gameTimeRemaining));
         gameTimeRemaining -= deltaTime;
         
         if (gameTimeRemaining <= 0) {
-            resetGame();
+            if (state.clockMode == ClockMode::Intermission) {
+                setTime(0, 0);
+                setClockMode(ClockMode::Stopped);
+            } else {
+                resetGame();
+            }
             return;
         }
 
         int newSeconds = static_cast<int>(std::ceil(gameTimeRemaining));
 
-        if (newSeconds < oldSeconds) {
+        if (newSeconds < oldSeconds && state.clockMode == ClockMode::Running) {
             int secondsPassed = oldSeconds - newSeconds;
             for (int i = 0; i < 2; ++i) {
                 if (state.homePenalties[i].secondsRemaining > 0) {
@@ -88,9 +93,12 @@ void ScoreboardController::setClockMode(ClockMode mode) {
 }
 
 void ScoreboardController::toggleClock() {
-    if (state.clockMode == ClockMode::Running) {
+    if (state.clockMode == ClockMode::Running || state.clockMode == ClockMode::Intermission) {
+        // If it was intermission, we'll just switch to Stopped but we might want to remember we were in intermission.
+        // For now, let's just make it Stopped.
         state.clockMode = ClockMode::Stopped;
     } else {
+        // Default to Running when starting from Stopped/Clock
         state.clockMode = ClockMode::Running;
     }
     notifyStateChanged();

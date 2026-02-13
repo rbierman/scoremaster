@@ -2,6 +2,7 @@ enum ClockMode {
   running,
   stopped,
   clock,
+  intermission,
 }
 
 class Penalty {
@@ -74,6 +75,8 @@ class ScoreboardState {
         return ClockMode.running;
       case 'Clock':
         return ClockMode.clock;
+      case 'Intermission':
+        return ClockMode.intermission;
       default:
         return ClockMode.stopped;
     }
