@@ -9,10 +9,9 @@ struct Penalty {
 };
 
 enum class ClockMode {
-    Running,
-    Stopped,
-    Clock,
-    Intermission
+    Game,
+    Intermission,
+    TimeOfDay
 };
 
 struct ScoreboardState {
@@ -27,5 +26,6 @@ struct ScoreboardState {
     int currentPeriod = 1;
     std::string homeTeamName = "HOME";
     std::string awayTeamName = "AWAY";
-    ClockMode clockMode = ClockMode::Stopped;
+    ClockMode clockMode = ClockMode::Game;
+    bool isClockRunning = false;
 };

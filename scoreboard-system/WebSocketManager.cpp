@@ -92,10 +92,9 @@ void WebSocketManager::handleCommand(const std::string& payload) {
         }
         else if (cmd == "setClockMode") {
             std::string mode = j.at("value").get<std::string>();
-            if (mode == "Running") controller.setClockMode(ClockMode::Running);
-            else if (mode == "Stopped") controller.setClockMode(ClockMode::Stopped);
-            else if (mode == "Clock") controller.setClockMode(ClockMode::Clock);
+            if (mode == "Game") controller.setClockMode(ClockMode::Game);
             else if (mode == "Intermission") controller.setClockMode(ClockMode::Intermission);
+            else if (mode == "TimeOfDay") controller.setClockMode(ClockMode::TimeOfDay);
         }
     } catch (const std::exception& e) {
         std::cerr << "Error parsing command JSON: " << e.what() << std::endl;
@@ -113,13 +112,13 @@ json WebSocketManager::stateToJson(const ScoreboardState& state) {
     j["currentPeriod"] = state.currentPeriod;
     j["homeTeamName"] = state.homeTeamName;
     j["awayTeamName"] = state.awayTeamName;
+    j["isClockRunning"] = state.isClockRunning;
     
     std::string mode;
     switch(state.clockMode) {
-        case ClockMode::Running: mode = "Running"; break;
-        case ClockMode::Stopped: mode = "Stopped"; break;
-        case ClockMode::Clock: mode = "Clock"; break;
+        case ClockMode::Game: mode = "Game"; break;
         case ClockMode::Intermission: mode = "Intermission"; break;
+        case ClockMode::TimeOfDay: mode = "TimeOfDay"; break;
     }
     j["clockMode"] = mode;
 

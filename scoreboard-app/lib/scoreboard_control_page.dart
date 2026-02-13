@@ -306,15 +306,37 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
   }
 
   Widget _buildClockControls() {
-    String modeStr = _state!.clockMode.toString().split('.').last;
     String timeStr = '${_state!.timeMinutes.toString().padLeft(2, '0')}:${_state!.timeSeconds.toString().padLeft(2, '0')}';
-    bool isClockRunning = _state!.clockMode == ClockMode.running || _state!.clockMode == ClockMode.intermission;
+    bool isClockRunning = _state!.isClockRunning;
 
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            SegmentedButton<ClockMode>(
+              segments: const [
+                ButtonSegment(value: ClockMode.game, label: Text('Game'), icon: Icon(Icons.sports_hockey)),
+                ButtonSegment(value: ClockMode.intermission, label: Text('Intermission'), icon: Icon(Icons.timer_outlined)),
+                ButtonSegment(value: ClockMode.timeOfDay, label: Text('Time'), icon: Icon(Icons.access_time)),
+              ],
+              selected: { _state!.clockMode },
+              onSelectionChanged: (Set<ClockMode> newSelection) {
+                ClockMode selected = newSelection.first;
+                if (selected == ClockMode.game) {
+                  _wsService?.sendCommand('setClockMode', value: 'Game');
+                } else if (selected == ClockMode.intermission) {
+                  // If switching to intermission, common to set to 15:00 if it was at 0
+                  if (_state!.timeMinutes == 0 && _state!.timeSeconds == 0) {
+                    _wsService?.sendCommand('setTime', minutes: 15, seconds: 0);
+                  }
+                  _wsService?.sendCommand('setClockMode', value: 'Intermission');
+                } else {
+                  _wsService?.sendCommand('setClockMode', value: 'TimeOfDay');
+                }
+              },
+            ),
+            const SizedBox(height: 16),
             InkWell(
               onTap: isClockRunning ? null : _showSetTimeDialog,
               child: Column(
@@ -323,36 +345,24 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
                     fontFamily: 'monospace',
                     color: isClockRunning ? null : Colors.blue,
                   )),
-                  if (!isClockRunning)
+                  if (!isClockRunning && _state!.clockMode != ClockMode.timeOfDay)
                     const Text('Tap to set time', style: TextStyle(fontSize: 10, color: Colors.blue)),
                 ],
               ),
             ),
-            Text('Mode: $modeStr', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () => _wsService?.sendCommand('toggleClock'),
-                  icon: Icon(isClockRunning ? Icons.pause : Icons.play_arrow),
-                  label: Text(isClockRunning ? 'Pause' : 'Start'),
+            if (_state!.clockMode != ClockMode.timeOfDay)
+              ElevatedButton.icon(
+                onPressed: () => _wsService?.sendCommand('toggleClock'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(200, 50),
+                  backgroundColor: isClockRunning ? Colors.orange : Colors.green,
+                  foregroundColor: Colors.white,
                 ),
-                ElevatedButton.icon(
-                  onPressed: () => _wsService?.sendCommand('setClockMode', value: 'Clock'),
-                  icon: const Icon(Icons.access_time),
-                  label: const Text('Time'),
-                ),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    _wsService?.sendCommand('setTime', minutes: 15, seconds: 0);
-                    _wsService?.sendCommand('setClockMode', value: 'Intermission');
-                  },
-                  icon: const Icon(Icons.timer_outlined),
-                  label: const Text('Intermission'),
-                ),
-              ],
-            ),
+                icon: Icon(isClockRunning ? Icons.pause : Icons.play_arrow),
+                label: Text(isClockRunning ? 'PAUSE CLOCK' : 'START CLOCK', 
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              ),
           ],
         ),
       ),
@@ -500,7 +510,7 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
 
   Widget _buildTeamPenalties(bool isHome) {
     List<Penalty> penalties = isHome ? _state!.homePenalties : _state!.awayPenalties;
-    bool isClockRunning = _state!.clockMode == ClockMode.running;
+    bool isClockRunning = _state!.isClockRunning;
 
     return Column(
       children: List.generate(2, (index) {

@@ -62,7 +62,11 @@ int main(int argc, char* argv[]) {
     NetworkManager network(8080);
     network.start();
 
-    scoreboard.setClockMode(ClockMode::Stopped);
+    // Default state: Game mode, clock stopped
+    scoreboard.setClockMode(ClockMode::Game);
+    if (scoreboard.getState().isClockRunning) {
+        scoreboard.toggleClock();
+    }
 
     std::cout << "Starting scoreboard loop..." << std::endl;
     simulator.printInstructions();

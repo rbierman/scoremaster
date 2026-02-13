@@ -27,14 +27,15 @@ void ScoreboardController::update() {
 }
 
 void ScoreboardController::update(double deltaTime) {
-    if (state.clockMode == ClockMode::Running || state.clockMode == ClockMode::Intermission) {
+    if (state.isClockRunning && (state.clockMode == ClockMode::Game || state.clockMode == ClockMode::Intermission)) {
         int oldSeconds = static_cast<int>(std::ceil(gameTimeRemaining));
         gameTimeRemaining -= deltaTime;
         
         if (gameTimeRemaining <= 0) {
             if (state.clockMode == ClockMode::Intermission) {
                 setTime(0, 0);
-                setClockMode(ClockMode::Stopped);
+                state.isClockRunning = false;
+                notifyStateChanged();
             } else {
                 resetGame();
             }
@@ -43,7 +44,7 @@ void ScoreboardController::update(double deltaTime) {
 
         int newSeconds = static_cast<int>(std::ceil(gameTimeRemaining));
 
-        if (newSeconds < oldSeconds && state.clockMode == ClockMode::Running) {
+        if (newSeconds < oldSeconds && state.clockMode == ClockMode::Game) {
             int secondsPassed = oldSeconds - newSeconds;
             for (int i = 0; i < 2; ++i) {
                 if (state.homePenalties[i].secondsRemaining > 0) {
@@ -66,19 +67,17 @@ void ScoreboardController::update(double deltaTime) {
         state.timeMinutes = newSeconds / 60;
         state.timeSeconds = newSeconds % 60;
         
-        // We might want to notify every second if needed, but for now we'll notify in update loop if state changes significantly or periodically
-        // For efficiency, maybe only notify when time changes (every second)
         if (newSeconds != oldSeconds) {
             notifyStateChanged();
         }
 
-    } else if (state.clockMode == ClockMode::Clock) {
+    } else if (state.clockMode == ClockMode::TimeOfDay) {
         int oldSec = state.timeSeconds;
         auto now = std::chrono::system_clock::now();
         std::time_t now_c = std::chrono::system_clock::to_time_t(now);
         std::tm* now_tm = std::localtime(&now_c);
         state.timeMinutes = now_tm->tm_hour;
-        state.timeSeconds = now_tm->tm_min; // Wait, wait, this should be minutes and seconds for display usually, but here it's hour/min
+        state.timeSeconds = now_tm->tm_min;
         if (state.timeSeconds != oldSec) {
             notifyStateChanged();
         }
@@ -88,20 +87,19 @@ void ScoreboardController::update(double deltaTime) {
 void ScoreboardController::setClockMode(ClockMode mode) {
     if (state.clockMode != mode) {
         state.clockMode = mode;
+        // If we switch to TimeOfDay, we should probably stop the clock
+        if (mode == ClockMode::TimeOfDay) {
+            state.isClockRunning = false;
+        }
         notifyStateChanged();
     }
 }
 
 void ScoreboardController::toggleClock() {
-    if (state.clockMode == ClockMode::Running || state.clockMode == ClockMode::Intermission) {
-        // If it was intermission, we'll just switch to Stopped but we might want to remember we were in intermission.
-        // For now, let's just make it Stopped.
-        state.clockMode = ClockMode::Stopped;
-    } else {
-        // Default to Running when starting from Stopped/Clock
-        state.clockMode = ClockMode::Running;
+    if (state.clockMode != ClockMode::TimeOfDay) {
+        state.isClockRunning = !state.isClockRunning;
+        notifyStateChanged();
     }
-    notifyStateChanged();
 }
 
 void ScoreboardController::addHomeScore(int delta) {
@@ -145,7 +143,7 @@ void ScoreboardController::nextPeriod() {
 }
 
 void ScoreboardController::resetGame() {
-    state.clockMode = ClockMode::Stopped;
+    state.isClockRunning = false;
     gameTimeRemaining = 20 * 60.0; 
     state.timeMinutes = 20;
     state.timeSeconds = 0;
@@ -155,6 +153,7 @@ void ScoreboardController::resetGame() {
     state.homeShots = 0;
     state.awayShots = 0;
     state.currentPeriod = 1;
+    state.clockMode = ClockMode::Game;
 
     for (int i = 0; i < 2; ++i) {
         state.homePenalties[i].secondsRemaining = 0;

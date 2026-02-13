@@ -22,13 +22,20 @@ void KeyboardSimulator::handleInput(sf::RenderWindow& window) {
                     scoreboard.toggleClock();
                     break;
                 case sf::Keyboard::Key::C:
-                    scoreboard.setClockMode(ClockMode::Clock);
+                    scoreboard.setClockMode(ClockMode::TimeOfDay);
                     break;
                 case sf::Keyboard::Key::S:
-                    scoreboard.setClockMode(ClockMode::Stopped);
+                    // Stop clock
+                    if (scoreboard.getState().isClockRunning) {
+                        scoreboard.toggleClock();
+                    }
                     break;
                 case sf::Keyboard::Key::R:
-                    scoreboard.setClockMode(ClockMode::Running);
+                    // Resume Running
+                    scoreboard.setClockMode(ClockMode::Game);
+                    if (!scoreboard.getState().isClockRunning) {
+                        scoreboard.toggleClock();
+                    }
                     break;
                 case sf::Keyboard::Key::Num1:
                     scoreboard.addHomeScore(1);

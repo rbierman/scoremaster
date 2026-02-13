@@ -1,8 +1,7 @@
 enum ClockMode {
-  running,
-  stopped,
-  clock,
+  game,
   intermission,
+  timeOfDay,
 }
 
 class Penalty {
@@ -32,6 +31,7 @@ class ScoreboardState {
   final String homeTeamName;
   final String awayTeamName;
   final ClockMode clockMode;
+  final bool isClockRunning;
 
   ScoreboardState({
     required this.homeScore,
@@ -46,6 +46,7 @@ class ScoreboardState {
     required this.homeTeamName,
     required this.awayTeamName,
     required this.clockMode,
+    required this.isClockRunning,
   });
 
   factory ScoreboardState.fromJson(Map<String, dynamic> json) {
@@ -66,19 +67,20 @@ class ScoreboardState {
       homeTeamName: json['homeTeamName'] as String,
       awayTeamName: json['awayTeamName'] as String,
       clockMode: _parseClockMode(json['clockMode'] as String),
+      isClockRunning: json['isClockRunning'] as bool,
     );
   }
 
   static ClockMode _parseClockMode(String mode) {
     switch (mode) {
-      case 'Running':
-        return ClockMode.running;
-      case 'Clock':
-        return ClockMode.clock;
+      case 'Game':
+        return ClockMode.game;
       case 'Intermission':
         return ClockMode.intermission;
+      case 'TimeOfDay':
+        return ClockMode.timeOfDay;
       default:
-        return ClockMode.stopped;
+        return ClockMode.game;
     }
   }
 }
