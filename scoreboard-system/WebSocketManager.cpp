@@ -87,6 +87,9 @@ void WebSocketManager::handleCommand(const std::string& payload) {
         else if (cmd == "toggleClock") controller.toggleClock();
         else if (cmd == "resetGame") controller.resetGame();
         else if (cmd == "nextPeriod") controller.nextPeriod();
+        else if (cmd == "setTime") {
+            controller.setTime(j.at("minutes").get<int>(), j.at("seconds").get<int>());
+        }
         else if (cmd == "setClockMode") {
             std::string mode = j.at("value").get<std::string>();
             if (mode == "Running") controller.setClockMode(ClockMode::Running);

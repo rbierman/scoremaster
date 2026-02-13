@@ -82,7 +82,7 @@ class WebSocketService {
     });
   }
 
-  void sendCommand(String command, {dynamic value, int? delta, int? index, int? player}) {
+  void sendCommand(String command, {dynamic value, int? delta, int? index, int? player, int? minutes, int? seconds}) {
     if (_channel == null || _status != ConnectionStatus.connected) return;
     
     final Map<String, dynamic> payload = {'command': command};
@@ -90,6 +90,8 @@ class WebSocketService {
     if (delta != null) payload['delta'] = delta;
     if (index != null) payload['index'] = index;
     if (player != null) payload['player'] = player;
+    if (minutes != null) payload['minutes'] = minutes;
+    if (seconds != null) payload['seconds'] = seconds;
 
     try {
       _channel!.sink.add(jsonEncode(payload));

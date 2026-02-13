@@ -269,13 +269,26 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
   Widget _buildClockControls() {
     String modeStr = _state!.clockMode.toString().split('.').last;
     String timeStr = '${_state!.timeMinutes.toString().padLeft(2, '0')}:${_state!.timeSeconds.toString().padLeft(2, '0')}';
+    bool isClockRunning = _state!.clockMode == ClockMode.running;
 
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Text(timeStr, style: Theme.of(context).textTheme.displayMedium?.copyWith(fontFamily: 'monospace')),
+            InkWell(
+              onTap: isClockRunning ? null : _showSetTimeDialog,
+              child: Column(
+                children: [
+                  Text(timeStr, style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                    fontFamily: 'monospace',
+                    color: isClockRunning ? null : Colors.blue,
+                  )),
+                  if (!isClockRunning)
+                    const Text('Tap to set time', style: TextStyle(fontSize: 10, color: Colors.blue)),
+                ],
+              ),
+            ),
             Text('Mode: $modeStr', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 16),
             Row(
@@ -283,8 +296,8 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
               children: [
                 ElevatedButton.icon(
                   onPressed: () => _wsService?.sendCommand('toggleClock'),
-                  icon: Icon(_state!.clockMode == ClockMode.running ? Icons.pause : Icons.play_arrow),
-                  label: Text(_state!.clockMode == ClockMode.running ? 'Pause' : 'Start'),
+                  icon: Icon(isClockRunning ? Icons.pause : Icons.play_arrow),
+                  label: Text(isClockRunning ? 'Pause' : 'Start'),
                 ),
                 ElevatedButton.icon(
                   onPressed: () => _wsService?.sendCommand('setClockMode', value: 'Clock'),
@@ -295,6 +308,50 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showSetTimeDialog() {
+    final minController = TextEditingController(text: _state!.timeMinutes.toString());
+    final secController = TextEditingController(text: _state!.timeSeconds.toString());
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Set Remaining Time'),
+        content: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: minController,
+                decoration: const InputDecoration(labelText: 'Min'),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            const Text(' : ', style: TextStyle(fontSize: 24)),
+            Expanded(
+              child: TextField(
+                controller: secController,
+                decoration: const InputDecoration(labelText: 'Sec'),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              int mins = int.tryParse(minController.text) ?? 0;
+              int secs = int.tryParse(secController.text) ?? 0;
+              _wsService?.sendCommand('setTime', minutes: mins, seconds: secs);
+              Navigator.pop(context);
+            },
+            child: const Text('Set'),
+          ),
+        ],
       ),
     );
   }
