@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'discovery_dialog.dart';
 import 'web_socket_service.dart';
 import 'scoreboard_state.dart';
+import 'team_configuration_page.dart';
 
 class ScoreboardControlPage extends StatefulWidget {
   const ScoreboardControlPage({super.key});
@@ -187,6 +188,18 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
       appBar: AppBar(
         title: const Text('Scoreboard Control'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.people),
+            tooltip: 'Configure Teams',
+            onPressed: _wsService == null ? null : () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TeamConfigurationPage(wsService: _wsService!),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(_connectedService == null ? Icons.link_off : Icons.link),
             onPressed: _showDiscoveryDialog,
