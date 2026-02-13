@@ -185,11 +185,11 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
         setState(() {
           _teams = teams;
         });
-        // Request images for players that have them and aren't in cache
+        // Request images for players that have them
         for (var team in teams) {
           for (var player in team.players) {
-            String key = "${team.name}_${player.number}";
-            if (player.hasImage && !_imageCache.containsKey(key)) {
+            if (player.hasImage) {
+              // Always request to ensure we have the latest (in case it changed)
               _wsService!.getPlayerImage(team.name, player.number);
             }
           }
