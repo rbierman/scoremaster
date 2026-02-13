@@ -65,6 +65,13 @@ static std::string get_local_ip() {
     return ip;
 }
 
+static bool compare_names(const std::string& a, const std::string& b) {
+    if (a == b) return true;
+    if (a.length() > b.length() && a.back() == '.' && a.substr(0, a.length() - 1) == b) return true;
+    if (b.length() > a.length() && b.back() == '.' && b.substr(0, b.length() - 1) == a) return true;
+    return false;
+}
+
 static int query_callback(int sock, const struct sockaddr* from, size_t addrlen, mdns_entry_type_t entry,
                          uint16_t query_id, uint16_t rtype, uint16_t rclass, uint32_t ttl, const void* data,
                          size_t size, size_t name_offset, size_t name_length, size_t record_offset,
@@ -76,10 +83,14 @@ static int query_callback(int sock, const struct sockaddr* from, size_t addrlen,
     mdns_string_t name_str = mdns_string_extract(data, size, &name_offset, name_buffer, sizeof(name_buffer));
     
     std::string queried_name(name_str.str, name_str.length);
-    // std::cout << "[Network] Received query for: " << queried_name << std::endl;
+    std::cout << "[Network] Received query for: " << queried_name << " (Type: " << rtype << ")" << std::endl;
 
-    // Check if the query matches our service type (e.g. _hockey-score._tcp.local.)
-    if (queried_name == records->service_type || queried_name == records->instance_name) {
+    // Respond if the query matches our service type, instance name, or hostname
+    if (compare_names(queried_name, records->service_type) || 
+        compare_names(queried_name, records->instance_name) ||
+        compare_names(queried_name, records->hostname)) {
+        
+        std::cout << "[Network] Sending response for: " << queried_name << std::endl;
         mdns_record_t ptr_record = {};
         ptr_record.name = {records->service_type.c_str(), records->service_type.length()};
         ptr_record.type = MDNS_RECORDTYPE_PTR;
@@ -100,14 +111,19 @@ static int query_callback(int sock, const struct sockaddr* from, size_t addrlen,
         mdns_record_t a_record = {};
         a_record.name = {records->hostname.c_str(), records->hostname.length()};
         a_record.type = MDNS_RECORDTYPE_A;
-        unsigned long ip_addr = inet_addr(records->local_ip.c_str());
-        memcpy(&a_record.data.a.addr, &ip_addr, 4);
+        a_record.data.a.addr.sin_family = AF_INET;
+        inet_pton(AF_INET, records->local_ip.c_str(), &a_record.data.a.addr.sin_addr);
 
         mdns_record_t additional[3] = { srv_record, txt_record, a_record };
         
-        // Respond via multicast so all browsers see it
         void* buffer = malloc(2048);
-        mdns_announce_multicast(sock, buffer, 2048, ptr_record, nullptr, 0, additional, 3);
+        if (compare_names(queried_name, records->hostname)) {
+            // If they asked specifically for the hostname, give them the A record as the main answer
+            mdns_query_answer_multicast(sock, buffer, 2048, a_record, nullptr, 0, nullptr, 0);
+        } else {
+            // Otherwise give the PTR record and everything else as additional
+            mdns_announce_multicast(sock, buffer, 2048, ptr_record, nullptr, 0, additional, 3);
+        }
         free(buffer);
     }
     return 0;
@@ -134,10 +150,18 @@ void NetworkManager::runmDNS() {
 
     char hostname_buf[256];
     gethostname(hostname_buf, sizeof(hostname_buf));
-    records.hostname = std::string(hostname_buf) + ".local.";
+    std::string host_str(hostname_buf);
+    if (host_str.find(".local") == std::string::npos) {
+        records.hostname = host_str + ".local.";
+    } else if (host_str.back() != '.') {
+        records.hostname = host_str + ".";
+    } else {
+        records.hostname = host_str;
+    }
 
     std::cout << "[Network] mDNS Responder active" << std::endl;
     std::cout << "  Instance: " << records.instance_name << std::endl;
+    std::cout << "  Hostname: " << records.hostname << std::endl;
     std::cout << "  IP:       " << records.local_ip << std::endl;
 
     void* buffer = malloc(2048);
@@ -163,11 +187,17 @@ void NetworkManager::runmDNS() {
             mdns_record_t a_record = {};
             a_record.name = {records.hostname.c_str(), records.hostname.length()};
             a_record.type = MDNS_RECORDTYPE_A;
-            unsigned long ip_addr = inet_addr(records.local_ip.c_str());
-            memcpy(&a_record.data.a.addr, &ip_addr, 4);
+            a_record.data.a.addr.sin_family = AF_INET;
+            inet_pton(AF_INET, records.local_ip.c_str(), &a_record.data.a.addr.sin_addr);
 
-            mdns_record_t additional[2] = { srv_record, a_record };
-            mdns_announce_multicast(sock, buffer, 2048, ptr_record, nullptr, 0, additional, 2);
+            mdns_record_t txt_record = {};
+            txt_record.name = {records.instance_name.c_str(), records.instance_name.length()};
+            txt_record.type = MDNS_RECORDTYPE_TXT;
+            txt_record.data.txt.key = {nullptr, 0};
+            txt_record.data.txt.value = {nullptr, 0};
+
+            mdns_record_t additional[3] = { srv_record, txt_record, a_record };
+            mdns_announce_multicast(sock, buffer, 2048, ptr_record, nullptr, 0, additional, 3);
             check_counter = 0;
         }
         
