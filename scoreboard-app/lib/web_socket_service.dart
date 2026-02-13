@@ -169,11 +169,12 @@ class WebSocketService {
     sendCommand('getTeams');
   }
 
-  void triggerGoal(String teamName, {int? playerNumber}) {
-    sendCommand('triggerGoal', extraArgs: {
-      'team': teamName,
-      'playerNumber': playerNumber,
-    });
+  void triggerGoal(bool isHome, {int? playerNumber}) {
+    final Map<String, dynamic> args = {'isHome': isHome};
+    if (playerNumber != null) {
+      args['playerNumber'] = playerNumber;
+    }
+    sendCommand('triggerGoal', extraArgs: args);
   }
 
   void dispose() {

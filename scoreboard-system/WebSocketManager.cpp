@@ -184,11 +184,15 @@ void WebSocketManager::handleMessage(std::shared_ptr<ix::ConnectionState> connec
                 webSocket.send(response.dump());
                 return;
             } else if (cmd == "triggerGoal") {
-                std::string teamName = j.at("team").get<std::string>();
+                bool isHome = j.at("isHome").get<bool>();
                 int playerNumber = j.value("playerNumber", 0);
                 
-                // Increment score
-                if (teamName == controller.getState().homeTeamName) {
+                std::string teamName = isHome ? controller.getState().homeTeamName : controller.getState().awayTeamName;
+
+                std::cout << "[WebSocket] Triggering goal for " << (isHome ? "Home" : "Away") << " (" << teamName << ") (Player: " << playerNumber << ")" << std::endl;
+
+                // Increment score (Reliable like + button)
+                if (isHome) {
                     controller.addHomeScore(1);
                 } else {
                     controller.addAwayScore(1);
@@ -206,8 +210,6 @@ void WebSocketManager::handleMessage(std::shared_ptr<ix::ConnectionState> connec
                         }
                     }
                 }
-                // If no player found or playerNumber is 0, still show a generic goal
-                controller.triggerGoalCelebration("", 0);
                 return;
             }
             

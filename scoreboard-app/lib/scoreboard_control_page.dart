@@ -354,7 +354,7 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
     if (team == null || team.players.isEmpty) {
       print('Team not found or has no players. Triggering generic goal.');
       // If no roster is configured, just trigger a generic goal
-      _wsService?.triggerGoal(teamName);
+      _wsService?.triggerGoal(isHome);
       return;
     }
 
@@ -384,7 +384,11 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
               if (index == actualPlayers.length) {
                 return InkWell(
                   onTap: () {
-                    _wsService?.triggerGoal(teamName);
+                    if (isHome) {
+                      _wsService?.addHomeScore();
+                    } else {
+                      _wsService?.addAwayScore();
+                    }
                     Navigator.pop(context);
                   },
                   child: const Column(
@@ -406,7 +410,7 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
 
               return InkWell(
                 onTap: () {
-                  _wsService?.triggerGoal(teamName, playerNumber: player.number);
+                  _wsService?.triggerGoal(isHome, playerNumber: player.number);
                   Navigator.pop(context);
                 },
                 child: Column(
