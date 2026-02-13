@@ -32,10 +32,13 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
 
   final Map<String, TextEditingController> _penaltyControllers = {};
   final Map<String, TextEditingController> _teamNameControllers = {};
+  final Map<String, FocusNode> _teamFocusNodes = {};
 
   @override
   void initState() {
     super.initState();
+    _teamFocusNodes['home'] = FocusNode();
+    _teamFocusNodes['away'] = FocusNode();
     _startDiscovery();
   }
 
@@ -46,6 +49,9 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
     _connectionSubscription?.cancel();
     _teamsSubscription?.cancel();
     _wsService?.dispose();
+    for (var node in _teamFocusNodes.values) {
+      node.dispose();
+    }
     for (var controller in _penaltyControllers.values) {
       controller.dispose();
     }
@@ -497,21 +503,64 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
     int shots = isHome ? _state!.homeShots : _state!.awayShots;
     String teamName = isHome ? _state!.homeTeamName : _state!.awayTeamName;
     final controller = _getTeamNameController(isHome, teamName);
+    bool isValidTeam = _teams.any((t) => t.name == teamName);
 
     return Column(
       children: [
-        TextField(
-          maxLength: 8,
-          decoration: InputDecoration(
-            labelText: isHome ? 'Home Team' : 'Away Team',
-            border: const OutlineInputBorder(),
-            counterText: "",
-          ),
-          controller: controller,
-          onChanged: (val) {
+        RawAutocomplete<String>(
+          optionsBuilder: (TextEditingValue textEditingValue) {
+            return _teams
+                .map((t) => t.name)
+                .where((name) => name.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+          },
+          onSelected: (String selection) {
             _wsService?.sendCommand(
               isHome ? 'setHomeTeamName' : 'setAwayTeamName',
-              value: val,
+              value: selection,
+            );
+          },
+          textEditingController: controller,
+          focusNode: _teamFocusNodes[isHome ? 'home' : 'away']!,
+          optionsViewBuilder: (context, onSelected, options) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4.0,
+                child: SizedBox(
+                  width: 250,
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    itemCount: options.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      final String option = options.elementAt(index);
+                      return ListTile(
+                        title: Text(option),
+                        onTap: () => onSelected(option),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+          fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+            return TextField(
+              controller: textEditingController,
+              focusNode: focusNode,
+              maxLength: 8,
+              decoration: InputDecoration(
+                labelText: isHome ? 'Home Team' : 'Away Team',
+                border: const OutlineInputBorder(),
+                counterText: "",
+                suffixIcon: isValidTeam ? const Icon(Icons.check_circle, color: Colors.green, size: 16) : null,
+              ),
+              onChanged: (val) {
+                _wsService?.sendCommand(
+                  isHome ? 'setHomeTeamName' : 'setAwayTeamName',
+                  value: val,
+                );
+              },
             );
           },
         ),
@@ -520,6 +569,8 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Left placeholder to balance the GOAL button on the right
+            _buildGoalButtonPlaceholder(),
             IconButton(
               onPressed: () => _wsService?.sendCommand(isHome ? 'addHomeScore' : 'addAwayScore', delta: -1),
               icon: const Icon(Icons.remove)
@@ -531,10 +582,10 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
             ),
             const SizedBox(width: 4),
             ElevatedButton(
-              onPressed: () => _showGoalPlayerSelection(isHome),
+              onPressed: isValidTeam ? () => _showGoalPlayerSelection(isHome) : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
+                backgroundColor: isValidTeam ? Colors.red : Colors.grey.shade800,
+                foregroundColor: isValidTeam ? Colors.white : Colors.grey.shade500,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
               ),
               child: const Text('GOAL', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -546,6 +597,7 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            _buildGoalButtonPlaceholder(),
             IconButton(
               onPressed: () => _wsService?.sendCommand(isHome ? 'addHomeShots' : 'addAwayShots', delta: -1),
               icon: const Icon(Icons.remove)
@@ -555,6 +607,8 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
               onPressed: () => _wsService?.sendCommand(isHome ? 'addHomeShots' : 'addAwayShots', delta: 1),
               icon: const Icon(Icons.add)
             ),
+            const SizedBox(width: 4),
+            _buildGoalButtonPlaceholder(),
           ],
         ),
       ],
@@ -677,6 +731,26 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
           index: index, value: seconds, player: player);
       } : null,
       child: Text(label, style: TextStyle(fontSize: 12, color: enabled ? null : Colors.grey)),
+    );
+  }
+
+  Widget _buildGoalButtonPlaceholder() {
+    return Opacity(
+      opacity: 0,
+      child: IgnorePointer(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ElevatedButton(
+              onPressed: null,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+              child: const Text('GOAL', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
