@@ -540,12 +540,12 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
             ),
             const SizedBox(height: 16),
             InkWell(
-              onTap: isClockRunning ? null : _showSetTimeDialog,
+              onTap: (isClockRunning || _state!.clockMode == ClockMode.timeOfDay) ? null : _showSetTimeDialog,
               child: Column(
                 children: [
                   Text(timeStr, style: Theme.of(context).textTheme.displayMedium?.copyWith(
                     fontFamily: 'monospace',
-                    color: isClockRunning ? null : Colors.blue,
+                    color: (isClockRunning || _state!.clockMode == ClockMode.timeOfDay) ? null : Colors.blue,
                   )),
                   if (!isClockRunning && _state!.clockMode != ClockMode.timeOfDay)
                     const Text('Tap to set time', style: TextStyle(fontSize: 10, color: Colors.blue)),
