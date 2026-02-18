@@ -85,8 +85,22 @@ class _ScoreboardDiscoveryDialogState extends State<ScoreboardDiscoveryDialog> {
                                     if (json['service.host'] != null && json['service.host'] != '0.0.0.0') {
                                       subtitle = '${json['service.host']}:${json['service.port']}';
                                     }
+
+                                    String? version = service.attributes['version'];
+
                                     return ListTile(
-                                      title: Text(service.name),
+                                      title: Row(
+                                        children: [
+                                          Expanded(child: Text(service.name)),
+                                          if (version != null)
+                                            Text(
+                                              'v$version',
+                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
                                       subtitle: Text(subtitle),
                                       onTap: () => widget.onServiceSelected(service),
                                     );

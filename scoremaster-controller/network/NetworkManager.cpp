@@ -105,8 +105,8 @@ static int query_callback(int sock, const struct sockaddr* from, size_t addrlen,
         mdns_record_t txt_record = {};
         txt_record.name = {records->instance_name.c_str(), records->instance_name.length()};
         txt_record.type = MDNS_RECORDTYPE_TXT;
-        txt_record.data.txt.key = {nullptr, 0};
-        txt_record.data.txt.value = {nullptr, 0};
+        txt_record.data.txt.key = {MDNS_STRING_CONST("version")};
+        txt_record.data.txt.value = {SCOREMASTER_VERSION, strlen(SCOREMASTER_VERSION)};
 
         mdns_record_t a_record = {};
         a_record.name = {records->hostname.c_str(), records->hostname.length()};
@@ -201,8 +201,8 @@ void NetworkManager::runmDNS() {
             mdns_record_t txt_record = {};
             txt_record.name = {records.instance_name.c_str(), records.instance_name.length()};
             txt_record.type = MDNS_RECORDTYPE_TXT;
-            txt_record.data.txt.key = {nullptr, 0};
-            txt_record.data.txt.value = {nullptr, 0};
+            txt_record.data.txt.key = {MDNS_STRING_CONST("version")};
+            txt_record.data.txt.value = {SCOREMASTER_VERSION, strlen(SCOREMASTER_VERSION)};
 
             mdns_record_t additional[3] = { srv_record, txt_record, a_record };
             mdns_announce_multicast(sock, buffer, 2048, ptr_record, nullptr, 0, additional, 3);
@@ -233,8 +233,8 @@ void NetworkManager::runmDNS() {
     mdns_record_t txt_record = {};
     txt_record.name = {records.instance_name.c_str(), records.instance_name.length()};
     txt_record.type = MDNS_RECORDTYPE_TXT;
-    txt_record.data.txt.key = {nullptr, 0};
-    txt_record.data.txt.value = {nullptr, 0};
+    txt_record.data.txt.key = {MDNS_STRING_CONST("version")};
+    txt_record.data.txt.value = {SCOREMASTER_VERSION, strlen(SCOREMASTER_VERSION)};
 
     mdns_record_t additional[3] = { srv_record, txt_record, a_record };
     mdns_goodbye_multicast(sock, buffer, 2048, ptr_record, nullptr, 0, additional, 3);
