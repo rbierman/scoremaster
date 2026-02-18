@@ -47,6 +47,7 @@ if(ENABLE_SFML)
 endif()
 
 add_executable(scoremaster-controller ${SOURCES})
+target_compile_definitions(scoremaster-controller PRIVATE SCOREMASTER_VERSION="${SCOREMASTER_VERSION}")
 
 if(ENABLE_SFML)
     target_compile_definitions(scoremaster-controller PRIVATE ENABLE_SFML)

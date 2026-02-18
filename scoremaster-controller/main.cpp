@@ -22,7 +22,17 @@
 #include "KeyboardControl.h"
 #endif
 
+void printStartupBanner() {
+#ifdef ENABLE_SFML
+    std::string buildType = "Standard";
+#else
+    std::string buildType = "Headless";
+#endif
+    std::cout << "ScoreMaster Controller v" << SCOREMASTER_VERSION << " (" << buildType << ")" << std::endl;
+}
+
 int main(int argc, char* argv[]) {
+    printStartupBanner();
 
     CommandLineArgs args(argc, argv);
 
