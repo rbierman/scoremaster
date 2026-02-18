@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = "configure" ]; then
+    echo "Setting permissions and capabilities for hockey-scoreboard..."
+    
+    # Ensure the binary is owned by root but executable by others
+    chown root:scoreboard /usr/bin/hockey-scoreboard
+    chmod 755 /usr/bin/hockey-scoreboard
+
+    # Grant raw socket capabilities to the binary
+    if command -v setcap > /dev/null; then
+        setcap 'cap_net_raw,cap_net_admin=eip' /usr/bin/hockey-scoreboard || echo "Warning: Failed to set capabilities."
+    else
+        echo "Warning: setcap command not found. LED support may require root."
+    fi
+fi
+
+exit 0

@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = "install" ] || [ "$1" = "upgrade" ]; then
+    if ! getent passwd scoreboard > /dev/null; then
+        echo "Creating scoreboard system user..."
+        adduser --system --no-create-home --group scoreboard
+    fi
+fi
+
+exit 0

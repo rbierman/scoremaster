@@ -48,10 +48,43 @@ target_link_libraries(hockey-scoreboard PRIVATE blend2d::blend2d)
 find_package(cpplocate REQUIRED)
 target_link_libraries(hockey-scoreboard PRIVATE cpplocate::cpplocate)
 
-# Copy fonts directory to the binary directory
-add_custom_command(TARGET hockey-scoreboard PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_SOURCE_DIR}/fonts
-            ${CMAKE_BINARY_DIR}/fonts
-    COMMENT "Copying fonts directory"
+# --- INSTALLATION ---
+
+include(GNUInstallDirs)
+
+# Install binary
+install(TARGETS hockey-scoreboard
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+# Install assets (Fonts and Data)
+install(DIRECTORY fonts DESTINATION ${CMAKE_INSTALL_DATADIR}/hockey-scoreboard)
+# Create data dir if it doesn't exist in source, or just ensure it's installed
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/data")
+    install(DIRECTORY data DESTINATION ${CMAKE_INSTALL_DATADIR}/hockey-scoreboard)
+endif()
+
+# Install systemd service
+install(FILES packaging/hockey-scoreboard.service 
+        DESTINATION lib/systemd/system)
+
+# --- CPACK (DEB Generation) ---
+
+set(CPACK_PACKAGE_NAME "hockey-scoreboard")
+set(CPACK_PACKAGE_VENDOR "HockeyScoreboard")
+set(CPACK_PACKAGE_VERSION "1.0.0")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "High-performance hockey scoreboard renderer")
+set(CPACK_GENERATOR "DEB")
+set(CPACK_PACKAGE_CONTACT "admin@example.com")
+
+# Debian specific
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Scoreboard Maintainer")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libsfml-graphics3.0, libsfml-window3.0, libsfml-system3.0, libsfml-network3.0")
+set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
+set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+
+# Attach scripts
+set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA 
+    "${CMAKE_CURRENT_SOURCE_DIR}/packaging/preinst;${CMAKE_CURRENT_SOURCE_DIR}/packaging/postinst")
+
+include(CPack)
