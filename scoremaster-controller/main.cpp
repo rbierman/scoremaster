@@ -1,23 +1,26 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <SFML/System/Sleep.hpp>
 #include <chrono>
+#include <thread>
 
 #include "display/DoubleFramebuffer.h"
-#include "display/SFMLDisplay.h"
 #include "display/ColorLightDisplay.h"
 #include "ScoreboardController.h"
 #include "ScoreboardRenderer.h"
 #include "GoalCelebrationRenderer.h"
 #include "IRenderer.h"
-#include "KeyboardControl.h"
 #include "network/NetworkManager.h"
 #include "network/WebSocketManager.h"
 #include "network/Base64Coder.h"
 #include "TeamManager.h"
 #include "CommandLineArgs.h"
 #include "ResourceLocator.h"
+
+#ifdef ENABLE_SFML
+#include "display/SFMLDisplay.h"
+#include "KeyboardControl.h"
+#endif
 
 int main(int argc, char* argv[]) {
 
@@ -33,11 +36,13 @@ int main(int argc, char* argv[]) {
     DoubleFramebuffer dfb(w, h);
     std::vector<IDisplay*> displays;
 
+#ifdef ENABLE_SFML
     SFMLDisplay* sfmlDisplay = nullptr;
     if (args.enableSFML()) {
         sfmlDisplay = new SFMLDisplay(dfb);
         displays.push_back(sfmlDisplay);
     }
+#endif
 
     if (args.enableColorLight()) {
         ColorLightDisplay* clDisplay = new ColorLightDisplay(args.colorLightInterface(), dfb);
@@ -45,7 +50,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (displays.empty()) {
-        std::cerr << "No display enabled. Please use -s or -c to enable at least one display." << std::endl;
+        std::cerr << "No display enabled. Please use -c to enable ColorLight (or -s for SFML if supported)." << std::endl;
         return 1;
     }
 
@@ -65,7 +70,11 @@ int main(int argc, char* argv[]) {
 
     ScoreboardRenderer scoreboardRenderer(dfb, resourceLocator, scoreboard.getState());
     GoalCelebrationRenderer goalRenderer(dfb, resourceLocator, scoreboard);
+
+#ifdef ENABLE_SFML
     KeyboardControl simulator(scoreboard);
+#endif
+
     NetworkManager network(9000);
     network.start();
 
@@ -76,11 +85,15 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << "Starting scoreboard loop..." << std::endl;
+    
+#ifdef ENABLE_SFML
     simulator.printInstructions();
+#endif
 
     // Main application loop
     bool running = true;
     while(running) {
+#ifdef ENABLE_SFML
         if (sfmlDisplay) {
             if (!sfmlDisplay->isOpen()) {
                 running = false;
@@ -88,6 +101,7 @@ int main(int argc, char* argv[]) {
                 simulator.handleInput(sfmlDisplay->getWindow());
             }
         }
+#endif
         
         if (!running) break;
 
@@ -109,7 +123,7 @@ int main(int argc, char* argv[]) {
         }
 
         // Avoid pegged CPU
-        sf::sleep(sf::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
     for (IDisplay* disp : displays) {

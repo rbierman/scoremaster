@@ -36,32 +36,43 @@ jobs:
             libflac-dev \
             libvorbis-dev
 
-      - name: Configure CMake
+      - name: Configure and Build Standard (with SFML)
         run: |
-          # Use the pre-installed vcpkg on GitHub runners
-          cmake -B build -S scoremaster-controller \
+          cmake -B build-standard -S scoremaster-controller \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
+            -DENABLE_SFML=ON \
             -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake \
             -DPROJECT_VERSION=${{ github.event.inputs.version }}
+          cmake --build build-standard
 
-      - name: Build
-        run: cmake --build build
+      - name: Configure and Build Headless (no SFML)
+        run: |
+          cmake -B build-headless -S scoremaster-controller \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DENABLE_SFML=OFF \
+            -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake \
+            -DPROJECT_VERSION=${{ github.event.inputs.version }}
+          cmake --build build-headless
 
       - name: Package
         run: |
           # Ensure scripts are executable for CPack
           chmod +x scoremaster-controller/packaging/preinst
           chmod +x scoremaster-controller/packaging/postinst
-          cd build
-          cpack -G DEB
+          
+          cd build-standard && cpack -G DEB && cd ..
+          cd build-headless && cpack -G DEB && cd ..
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.event.inputs.version }}
           name: Release v${{ github.event.inputs.version }}
-          files: build/*.deb
+          files: |
+            build-standard/*.deb
+            build-headless/*.deb
           draft: false
           prerelease: false
         env:

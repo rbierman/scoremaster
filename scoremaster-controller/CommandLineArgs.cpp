@@ -8,9 +8,12 @@ CommandLineArgs::CommandLineArgs(const int argc, char* argv[]) {
 void CommandLineArgs::parseArgs(const int argc, char* argv[]) {
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
+#ifdef ENABLE_SFML
         if (arg == "-s" || arg == "--sfml") {
             m_enableSFML = true;
-        } else if (arg == "-c" || arg == "--colorlight") {
+        } else 
+#endif
+        if (arg == "-c" || arg == "--colorlight") {
             m_enableColorLight = true;
             if (i + 1 < argc && argv[i+1][0] != '-') {
                 m_colorLightInterface = argv[++i];
@@ -24,7 +27,9 @@ void CommandLineArgs::parseArgs(const int argc, char* argv[]) {
 
 void CommandLineArgs::printHelp(const char* appName) const {
     std::cout << "Usage: " << appName << " [OPTIONS]" << std::endl;
+#ifdef ENABLE_SFML
     std::cout << "  -s, --sfml         Enable SFML display (default: enabled)" << std::endl;
+#endif
     std::cout << "  -c, --colorlight [interface] Enable ColorLight display (default: disabled). "
               << "Optionally specify network interface, e.g., -c eth0" << std::endl;
     std::cout << "  -h, --help         Show this help message" << std::endl;
