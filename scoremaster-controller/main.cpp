@@ -3,6 +3,8 @@
 #include <string>
 #include <chrono>
 #include <thread>
+#include <csignal>
+#include <atomic>
 
 #include "display/DoubleFramebuffer.h"
 #include "display/ColorLightDisplay.h"
@@ -21,6 +23,13 @@
 #include "display/SFMLDisplay.h"
 #include "KeyboardControl.h"
 #endif
+
+std::atomic<bool> g_running{true};
+
+void signalHandler(int signum) {
+    std::cout << "\nInterrupt signal (" << signum << ") received. Shutting down..." << std::endl;
+    g_running = false;
+}
 
 void printStartupBanner(const CommandLineArgs& args) {
 #ifdef ENABLE_SFML
@@ -111,20 +120,22 @@ int main(int argc, char* argv[]) {
     simulator.printInstructions();
 #endif
 
+    std::signal(SIGINT, signalHandler);
+    std::signal(SIGTERM, signalHandler);
+
     // Main application loop
-    bool running = true;
-    while(running) {
+    while(g_running) {
 #ifdef ENABLE_SFML
         if (sfmlDisplay) {
             if (!sfmlDisplay->isOpen()) {
-                running = false;
+                g_running = false;
             } else {
                 simulator.handleInput(sfmlDisplay->getWindow());
             }
         }
 #endif
         
-        if (!running) break;
+        if (!g_running) break;
 
         // --- LOGIC ---
         scoreboard.update();
@@ -150,6 +161,10 @@ int main(int argc, char* argv[]) {
         // Avoid pegged CPU
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
+
+    std::cout << "Shutting down..." << std::endl;
+    network.stop();
+    ws.stop();
 
     for (IDisplay* disp : displays) {
         delete disp;
