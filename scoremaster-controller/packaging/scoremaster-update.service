@@ -1,0 +1,10 @@
+[Unit]
+Description=Check for ScoreMaster Controller Updates
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/scoremaster-update
+# Ensure we don't conflict with other apt processes
+ExecStartPre=/usr/bin/sleep 10

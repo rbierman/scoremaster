@@ -66,7 +66,14 @@ endif()
 
 # Install systemd service
 install(FILES packaging/scoremaster-controller.service 
+              packaging/scoremaster-update.service
+              packaging/scoremaster-update.timer
         DESTINATION lib/systemd/system)
+
+# Install update script
+install(PROGRAMS packaging/scoremaster-update.sh 
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
+        RENAME scoremaster-update)
 
 # --- CPACK (DEB Generation) ---
 
@@ -79,7 +86,7 @@ set(CPACK_PACKAGE_CONTACT "admin@example.com")
 
 # Debian specific
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "ScoreMaster Maintainer")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libsfml-graphics3.0, libsfml-window3.0, libsfml-system3.0, libsfml-network3.0")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libsfml-graphics3.0, libsfml-window3.0, libsfml-system3.0, libsfml-network3.0, curl, jq")
 set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
 

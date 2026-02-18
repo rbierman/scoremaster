@@ -14,6 +14,15 @@ if [ "$1" = "configure" ]; then
     else
         echo "Warning: setcap command not found. LED support may require root."
     fi
+
+    # Enable and start the services
+    echo "Enabling ScoreMaster services and update timer..."
+    systemctl daemon-reload || true
+    systemctl enable scoremaster-controller.service || true
+    systemctl start scoremaster-controller.service || true
+    
+    systemctl enable scoremaster-update.timer || true
+    systemctl start scoremaster-update.timer || true
 fi
 
 exit 0
