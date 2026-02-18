@@ -71,8 +71,8 @@ int main(int argc, char* argv[]) {
     }
 
     if (displays.empty()) {
-        std::cerr << "No display enabled. Please use -c to enable ColorLight (or -s for SFML if supported)." << std::endl;
-        return 1;
+        std::cerr << "WARNING: No display enabled (SFML or ColorLight). Scoreboard will run in 'Logic Only' mode." << std::endl;
+        std::cerr << "Remote control and configuration will still be available via the app." << std::endl;
     }
 
     ResourceLocator resourceLocator;
