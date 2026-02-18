@@ -8,6 +8,13 @@ if [ "$1" = "configure" ]; then
     # Get the selected interface from debconf
     db_get scoremaster-controller/interface
     SELECTED_INTERFACE="$RET"
+    
+    if [ "$SELECTED_INTERFACE" = "None (Disable ColorLight)" ]; then
+        SELECTED_INTERFACE="disabled"
+        CLI_ARGS="-s"
+    else
+        CLI_ARGS="-c $SELECTED_INTERFACE -s"
+    fi
 
     # Create the config directory
     mkdir -p /etc/scoremaster-controller
@@ -23,12 +30,12 @@ if [ "$1" = "configure" ]; then
 # -----------------------------------
 
 # The network interface connected to the ColorLight LED sender card.
-# This must be a physical Ethernet interface (e.g., eth0, enp2s0).
-# After changing this value, restart the service with:
-#   sudo systemctl restart scoremaster-controller
+# Set to 'disabled' to turn off LED output.
 SCOREMASTER_INTERFACE=$SELECTED_INTERFACE
 
-# Other options can be added here
+# Arguments passed to the scoremaster-controller binary.
+# After changing these, restart with: sudo systemctl restart scoremaster-controller
+SCOREMASTER_ARGS="$CLI_ARGS"
 EOF
 
     echo "Setting permissions and capabilities..."
@@ -52,6 +59,12 @@ EOF
     
     systemctl enable scoremaster-update.timer || true
     systemctl start scoremaster-update.timer || true
+
+    echo "--------------------------------------------------------"
+    echo " ScoreMaster Controller installation complete!"
+    echo " To change the network interface later, run:"
+    echo "   sudo dpkg-reconfigure scoremaster-controller"
+    echo "--------------------------------------------------------"
 fi
 
 exit 0

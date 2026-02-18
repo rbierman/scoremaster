@@ -9,7 +9,7 @@ User=scoreboard
 Group=scoreboard
 EnvironmentFile=/etc/scoremaster-controller/config.env
 # Capabilities are attached to the binary via setcap in postinst
-ExecStart=/usr/bin/scoremaster-controller -c ${SCOREMASTER_INTERFACE} -s
+ExecStart=/usr/bin/scoremaster-controller ${SCOREMASTER_ARGS}
 Restart=always
 RestartSec=5
 

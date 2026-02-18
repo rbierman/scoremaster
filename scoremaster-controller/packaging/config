@@ -3,11 +3,20 @@ set -e
 . /usr/share/debconf/confmodule
 
 # Fetch all network interfaces except 'lo'
-INTERFACES=$(ip -o link show | awk -F': ' '{print $2}' | grep -v 'lo' | tr '
-' ',' | sed 's/,$//' | sed 's/,/, /g')
+INTERFACES=$(ip -o link show | awk -F': ' '{print $2}' | grep -v 'lo' | tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')
+
+# Add a "None" option to ensure the list is never empty and gives an opt-out
+if [ -n "$INTERFACES" ]; then
+    INTERFACES="None (Disable ColorLight), $INTERFACES"
+else
+    INTERFACES="None (Disable ColorLight)"
+fi
 
 # Update the template with the found interfaces
 db_subst scoremaster-controller/interface interfaces "$INTERFACES"
+
+# Force the question to be shown during reconfiguration
+db_fset scoremaster-controller/interface seen false
 
 # Ask the question
 db_input high scoremaster-controller/interface || true
