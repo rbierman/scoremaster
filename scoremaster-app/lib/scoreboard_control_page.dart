@@ -228,7 +228,7 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
       appBar: AppBar(
         title: const Text('ScoreMaster'),
         actions: [
-          if (_connectedService != null)
+          if (_connectedService != null) ...[
             IconButton(
               icon: const Icon(Icons.power_settings_new),
               tooltip: 'Disconnect',
@@ -243,23 +243,24 @@ class _ScoreboardControlPageState extends State<ScoreboardControlPage> {
                 });
               },
             ),
-          IconButton(
-            icon: const Icon(Icons.people),
-            tooltip: 'Configure Teams',
-            onPressed: _wsService == null ? null : () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => TeamConfigurationPage(wsService: _wsService!),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Reset Game',
-            onPressed: () => _showResetConfirmation(),
-          ),
+            IconButton(
+              icon: const Icon(Icons.people),
+              tooltip: 'Configure Teams',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TeamConfigurationPage(wsService: _wsService!),
+                  ),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Reset Game',
+              onPressed: () => _showResetConfirmation(),
+            ),
+          ],
         ],
       ),
       body: Column(
