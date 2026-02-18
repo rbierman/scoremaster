@@ -1,6 +1,8 @@
 #include "NetworkManager.h"
 #include <iostream>
 #include <vector>
+#include <cstring>
+#include <cerrno>
 
 #ifdef _WIN32
 #define _CRT_SECURE_NO_WARNINGS
@@ -136,7 +138,11 @@ void NetworkManager::runmDNS() {
 
     int sock = mdns_socket_open_ipv4(&addr);
     if (sock < 0) {
-        std::cerr << "Error: Could not open mDNS socket. Is another mDNS responder (like avahi-daemon) running?" << std::endl;
+        int err = errno;
+        std::cerr << "Error: Could not open mDNS socket: " << strerror(err) << std::endl;
+        if (err == EADDRINUSE) {
+            std::cerr << "  -> Another mDNS responder (like avahi-daemon) might be using port 5353 exclusively." << std::endl;
+        }
         return;
     }
 
