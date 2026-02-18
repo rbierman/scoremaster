@@ -22,19 +22,30 @@
 #include "KeyboardControl.h"
 #endif
 
-void printStartupBanner() {
+void printStartupBanner(const CommandLineArgs& args) {
 #ifdef ENABLE_SFML
     std::string buildType = "Standard";
 #else
     std::string buildType = "Headless";
 #endif
     std::cout << "ScoreMaster Controller v" << SCOREMASTER_VERSION << " (" << buildType << ")" << std::endl;
+    
+    if (args.enableColorLight()) {
+        std::cout << "ColorLight LED: Enabled (Interface: " << args.colorLightInterface() << ")" << std::endl;
+    } else {
+        std::cout << "ColorLight LED: Disabled" << std::endl;
+    }
+
+    if (args.enableSFML()) {
+        std::cout << "SFML Display: Enabled" << std::endl;
+    } else {
+        std::cout << "SFML Display: Disabled" << std::endl;
+    }
 }
 
 int main(int argc, char* argv[]) {
-    printStartupBanner();
-
     CommandLineArgs args(argc, argv);
+    printStartupBanner(args);
 
     if (args.showHelp()) {
         args.printHelp(argv[0]);
