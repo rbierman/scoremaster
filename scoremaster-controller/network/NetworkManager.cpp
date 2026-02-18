@@ -143,7 +143,8 @@ void NetworkManager::runmDNS() {
         if (err == EADDRINUSE) {
             std::cerr << "  -> Another mDNS responder (like avahi-daemon) might be using port 5353 exclusively." << std::endl;
         }
-        return;
+        std::cerr << "FATAL: mDNS is required for discovery. Exiting." << std::endl;
+        exit(1);
     }
 
     char hostname_buf[256];
