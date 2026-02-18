@@ -40,11 +40,15 @@ public:
     void triggerGoalCelebration(const std::string& playerName, int playerNumber, const std::vector<uint8_t>& imageData = {});
     const std::vector<uint8_t>& getGoalPlayerImageData() const { return goalPlayerImageData; }
 
+    [[nodiscard]] bool isDirty() const { return dirty; }
+    void clearDirty() { dirty = false; }
+
 private:
     void notifyStateChanged();
 
     ScoreboardState state;
     StateChangeListener onStateChanged;
+    bool dirty = true;
 
     double gameTimeRemaining = 0.0;
     double goalCelebrationTimeRemaining = 0.0;

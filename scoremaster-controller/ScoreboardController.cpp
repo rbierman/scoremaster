@@ -14,6 +14,7 @@ const ScoreboardState& ScoreboardController::getState() const {
 }
 
 void ScoreboardController::notifyStateChanged() {
+    dirty = true;
     if (onStateChanged) {
         onStateChanged(state);
     }

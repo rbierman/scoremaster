@@ -129,18 +129,22 @@ int main(int argc, char* argv[]) {
         // --- LOGIC ---
         scoreboard.update();
 
-        // --- RENDER ---
-        if (scoreboard.getState().goalEvent.active) {
-            goalRenderer.render();
-        } else {
-            scoreboardRenderer.render();
-        }
+        // --- RENDER (Only if dirty) ---
+        if (scoreboard.isDirty()) {
+            if (scoreboard.getState().goalEvent.active) {
+                goalRenderer.render();
+            } else {
+                scoreboardRenderer.render();
+            }
 
-        // --- DISPLAY ---
-        dfb.swap();
+            // --- DISPLAY ---
+            dfb.swap();
 
-        for (IDisplay* disp : displays) {
-            disp->output();
+            for (IDisplay* disp : displays) {
+                disp->output();
+            }
+
+            scoreboard.clearDirty();
         }
 
         // Avoid pegged CPU
