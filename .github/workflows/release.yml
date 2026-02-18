@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g., 1.0.0)'
-        required: true
-        default: '1.0.0'
+        description: 'Version tag (e.g., 1.0.1). Leave blank to auto-increment patch version.'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -19,6 +19,29 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all tags
+
+      - name: Determine Version
+        id: get_version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            # Get latest tag, fallback to 1.0.0 if none exists
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+            echo "Latest tag: $LATEST_TAG"
+            
+            # Strip 'v' and increment patch version
+            BASE_VERSION=$(echo $LATEST_TAG | sed 's/v//')
+            MAJOR=$(echo $BASE_VERSION | cut -d. -f1)
+            MINOR=$(echo $BASE_VERSION | cut -d. -f2)
+            PATCH=$(echo $BASE_VERSION | cut -d. -f3)
+            NEW_PATCH=$((PATCH + 1))
+            VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          fi
+          echo "Final Version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Install System Dependencies
         run: |
@@ -56,7 +79,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DENABLE_SFML=ON \
             -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake \
-            -DSCOREMASTER_VERSION=${{ github.event.inputs.version }}
+            -DSCOREMASTER_VERSION=${{ steps.get_version.outputs.version }}
           cmake --build build-standard
 
       - name: Configure and Build Headless (no SFML)
@@ -66,7 +89,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DENABLE_SFML=OFF \
             -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake \
-            -DSCOREMASTER_VERSION=${{ github.event.inputs.version }}
+            -DSCOREMASTER_VERSION=${{ steps.get_version.outputs.version }}
           cmake --build build-headless
 
       - name: Package
@@ -81,8 +104,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ github.event.inputs.version }}
-          name: Release v${{ github.event.inputs.version }}
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Release v${{ steps.get_version.outputs.version }}
           files: |
             build-standard/*.deb
             build-headless/*.deb
