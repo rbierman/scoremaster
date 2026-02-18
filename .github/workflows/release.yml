@@ -14,6 +14,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      VCPKG_BINARY_SOURCES: 'clear;files,${{ github.workspace }}/vcpkg_cache,readwrite'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -35,6 +37,17 @@ jobs:
             libopenal-dev \
             libflac-dev \
             libvorbis-dev
+
+      - name: Create vcpkg cache directory
+        run: mkdir -p ${{ github.workspace }}/vcpkg_cache
+
+      - name: vcpkg Binary Cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/vcpkg_cache
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('scoremaster-controller/vcpkg.json') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
 
       - name: Configure and Build Standard (with SFML)
         run: |
@@ -58,9 +71,9 @@ jobs:
 
       - name: Package
         run: |
-          # Ensure scripts are executable for CPack
           chmod +x scoremaster-controller/packaging/preinst
           chmod +x scoremaster-controller/packaging/postinst
+          chmod +x scoremaster-controller/packaging/config
           
           cd build-standard && cpack -G DEB && cd ..
           cd build-headless && cpack -G DEB && cd ..
