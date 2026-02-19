@@ -158,18 +158,33 @@ jobs:
           cd puckpulse-app
           flutter pub get
 
-      - name: Build Android APK
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > puckpulse-app/android/app/upload-keystore.jks
+
+      - name: Create key.properties
+        run: |
+          echo "storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}" > puckpulse-app/android/key.properties
+          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> puckpulse-app/android/key.properties
+          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> puckpulse-app/android/key.properties
+          echo "storeFile=upload-keystore.jks" >> puckpulse-app/android/key.properties
+
+      - name: Build Android Artifacts
         run: |
           cd puckpulse-app
-          flutter build apk --release --build-name=${{ needs.version.outputs.version }} --build-number=1
+          flutter build appbundle --release --build-name=${{ needs.version.outputs.version }} --build-number=${{ github.run_number }}
+          flutter build apk --release --build-name=${{ needs.version.outputs.version }} --build-number=${{ github.run_number }}
 
-      - name: Rename APK
-        run: cp puckpulse-app/build/app/outputs/flutter-apk/app-release.apk puckpulse-app-v${{ needs.version.outputs.version }}.apk
+      - name: Rename Artifacts
+        run: |
+          cp puckpulse-app/build/app/outputs/bundle/release/app-release.aab puckpulse-app-v${{ needs.version.outputs.version }}.aab
+          cp puckpulse-app/build/app/outputs/flutter-apk/app-release.apk puckpulse-app-v${{ needs.version.outputs.version }}.apk
 
       - name: Stage Android Artifacts
         run: |
           mkdir -p staging
-          cp puckpulse-app-v${{ needs.version.outputs.version }}.apk staging/
+          cp *.aab staging/
+          cp *.apk staging/
 
       - name: Upload Android Artifacts
         uses: actions/upload-artifact@v4
@@ -253,6 +268,7 @@ jobs:
           files: |
             *.deb
             *.apk
+            *.aab
             *.tar.gz
           draft: false
           prerelease: false
