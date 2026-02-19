@@ -6,3 +6,8 @@ key.properties
 # Local Ruby environment
 .bundle/
 vendor/bundle/
+
+# Android/Gradle specific
+local.properties
+.gradle/
+app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java

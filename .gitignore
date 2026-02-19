@@ -46,9 +46,12 @@
 
 # CMake
 cmake-build-*/
-scoremaster-controller/build-standard/
-scoremaster-controller/build-headless/
-scoremaster-controller/build/
+puckpulse-controller/build-standard/
+puckpulse-controller/build-headless/
+puckpulse-controller/build/
+
+# IDE Caches
+.idea/caches/
 
 # Mongo Explorer plugin
 .idea/**/mongoSettings.xml
