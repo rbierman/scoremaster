@@ -9,7 +9,7 @@ This repository contains the PuckPulse system, a professional-grade hockey score
 
 ## Installation
 
-Pre-built binaries for all platforms are available on the [GitHub Releases](https://github.com/rbierman/scoremaster/releases) page.
+Pre-built binaries for all platforms are available on the [GitHub Releases](https://github.com/rbierman/PuckPulse/releases) page.
 
 ### 1. PuckPulse Controller (Linux)
 
@@ -49,3 +49,7 @@ For detailed development instructions, build guides, and release processes for e
 
 - [PuckPulse Controller (C++)](puckpulse-controller/README.md)
 - [PuckPulse App (Flutter)](puckpulse-app/README.md)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
