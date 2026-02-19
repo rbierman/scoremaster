@@ -2,3 +2,7 @@
 key.properties
 *.jks
 *.keystore
+
+# Local Ruby environment
+.bundle/
+vendor/bundle/
