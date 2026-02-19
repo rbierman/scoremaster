@@ -66,6 +66,8 @@ When installed as a package, it runs as a systemd service (`scoremaster-controll
 
 ## Development & Releasing
 
+For a detailed list of changes between versions, see the [CHANGELOG.md](CHANGELOG.md).
+
 ### CI/CD Workflow
 This project uses GitHub Actions for automated releases. The workflow:
 1. Compiles the controller for both Standard (SFML) and Headless targets.
