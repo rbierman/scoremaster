@@ -1,4 +1,4 @@
-package com.example.scoreboard_app
+package com.puckpulse
 
 import io.flutter.embedding.android.FlutterActivity
 
