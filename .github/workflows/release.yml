@@ -122,7 +122,62 @@ jobs:
           name: controller-debs
           path: staging/
 
-  build-app:
+  build-app-android:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Cache Pub Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('scoremaster-app/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install App Dependencies
+        run: |
+          cd scoremaster-app
+          flutter pub get
+
+      - name: Build Android APK
+        run: |
+          cd scoremaster-app
+          flutter build apk --release --build-name=${{ needs.version.outputs.version }} --build-number=1
+
+      - name: Rename APK
+        run: cp scoremaster-app/build/app/outputs/flutter-apk/app-release.apk scoremaster-app-v${{ needs.version.outputs.version }}.apk
+
+      - name: Stage Android Artifacts
+        run: |
+          mkdir -p staging
+          cp scoremaster-app-v${{ needs.version.outputs.version }}.apk staging/
+
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-artifacts
+          path: staging/
+
+  build-app-linux:
     needs: version
     runs-on: ubuntu-latest
     steps:
@@ -146,15 +201,19 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Cache Pub Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('scoremaster-app/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
       - name: Install App Dependencies
         run: |
           cd scoremaster-app
           flutter pub get
-
-      - name: Build Android APK
-        run: |
-          cd scoremaster-app
-          flutter build apk --release --build-name=${{ needs.version.outputs.version }} --build-number=1
 
       - name: Build Linux
         run: |
@@ -166,23 +225,19 @@ jobs:
           cd scoremaster-app/build/linux/x64/release/bundle
           tar -czvf ../../../../../scoremaster-app-linux.tar.gz .
 
-      - name: Rename APK
-        run: cp scoremaster-app/build/app/outputs/flutter-apk/app-release.apk scoremaster-app-v${{ needs.version.outputs.version }}.apk
-
-      - name: Stage App Artifacts
+      - name: Stage Linux Artifacts
         run: |
           mkdir -p staging
-          cp scoremaster-app-v${{ needs.version.outputs.version }}.apk staging/
-          cp scoremaster-app/scoremaster-app-linux.tar.gz staging/
+          cp scoremaster-app-linux.tar.gz staging/
 
-      - name: Upload App Artifacts
+      - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: app-artifacts
+          name: linux-app-artifacts
           path: staging/
 
   release:
-    needs: [version, build-controller, build-app]
+    needs: [version, build-controller, build-app-android, build-app-linux]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts

@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Linux App Bundle**: Automated packaging of the Flutter app for Linux.
 
 ### Changed
-- **CI/CD Pipeline**: Refactored release workflow into parallel jobs for faster builds and better reliability.
+- **CI/CD Pipeline**: Refactored release workflow into parallel jobs for faster builds and better reliability. Added caching for Gradle and Flutter Pub dependencies to significantly reduce Android build times.
 
 ## [1.0.0] - 2026-02-18
 
